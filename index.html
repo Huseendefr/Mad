@@ -6,373 +6,364 @@
     <title>القاعدة المدنية - تسجيل الحضور والتحفيظ</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: { 50: '#f0fdf4', 100: '#dcfce7', 200: '#bbf7d0', 300: '#86efac', 400: '#4ade80', 500: '#22c55e', 600: '#16a34a', 700: '#15803d', 800: '#166534', 900: '#14532d' },
-                        gold: { 400: '#fbbf24', 500: '#f59e0b', 600: '#d97706' }
-                    }
+
+<script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: {
+                    primary: { 50: '#f0fdf4', 100: '#dcfce7', 200: '#bbf7d0', 300: '#86efac', 400: '#4ade80', 500: '#22c55e', 600: '#16a34a', 700: '#15803d', 800: '#166534', 900: '#14532d' },
+                    gold: { 400: '#fbbf24', 500: '#f59e0b', 600: '#d97706' }
                 }
             }
         }
-    </script>
+    }
+</script>
+
+<style>
+    * { font-family: 'Cairo', sans-serif; box-sizing: border-box; }
+    body { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 50%, #f0fdf4 100%); min-height: 100vh; }
     
-    <style>
-        * { font-family: 'Cairo', sans-serif; box-sizing: border-box; }
-        body { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 50%, #f0fdf4 100%); min-height: 100vh; }
-        
-        .glass { background: rgba(255,255,255,0.85); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.5); box-shadow: 0 8px 32px rgba(22,163,74,0.1); }
-        .glass-card { background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); border: 1px solid rgba(22,163,74,0.1); box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
-        
-        .student-card { transition: all 0.3s ease; border: 3px solid transparent; }
-        .student-card:hover { transform: translateY(-4px); box-shadow: 0 15px 30px rgba(22,163,74,0.15); border-color: rgba(22,163,74,0.3); }
-        .student-card.selected { background: linear-gradient(135deg, rgba(22,163,74,0.15), rgba(34,197,94,0.08)); border-color: #22c55e; box-shadow: 0 10px 30px rgba(22,163,74,0.25); }
-        .student-card.recorded { border-color: #fbbf24; background: linear-gradient(135deg, rgba(251,191,36,0.1), rgba(245,158,11,0.05)); }
-        .student-card.absent { opacity: 0.6; border-color: #ef4444; background: rgba(239,68,68,0.05); }
-        
-        .tab-btn { transition: all 0.3s ease; position: relative; }
-        .tab-btn.active { background: linear-gradient(135deg, #22c55e, #16a34a); color: white; box-shadow: 0 4px 15px rgba(22,163,74,0.4); }
-        .tab-btn:not(.active):hover { background: rgba(22,163,74,0.1); }
-        
-        .atte-btn { transition: all 0.3s ease; border: 2px solid #e5e7eb; }
-        .atte-btn:hover { transform: scale(1.05); }
-        .atte-btn.selected { transform: scale(1.05); box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-        .atte-btn.present.selected { background: #22c55e; border-color: #22c55e; color: white; }
-        .atte-btn.absent-btn.selected { background: #ef4444; border-color: #ef4444; color: white; }
-        .atte-btn.late.selected { background: #f59e0b; border-color: #f59e0b; color: white; }
-        .atte-btn.excused.selected { background: #8b5cf6; border-color: #8b5cf6; color: white; }
-        
-        .grade-btn { transition: all 0.3s ease; border: 2px solid #e5e7eb; min-width: 70px; }
-        .grade-btn:hover { transform: scale(1.05); }
-        .grade-btn.selected { transform: scale(1.08); }
-        .grade-btn.excellent.selected { background: linear-gradient(135deg, #22c55e, #16a34a); border-color: #22c55e; color: white; }
-        .grade-btn.good.selected { background: linear-gradient(135deg, #3b82f6, #2563eb); border-color: #3b82f6; color: white; }
-        .grade-btn.acceptable.selected { background: linear-gradient(135deg, #f59e0b, #d97706); border-color: #f59e0b; color: white; }
-        .grade-btn.weak.selected { background: linear-gradient(135deg, #ef4444, #dc2626); border-color: #ef4444; color: white; }
-        
-        .deduct-btn { transition: all 0.2s ease; }
-        .deduct-btn:hover { transform: scale(1.1); }
-        .deduct-btn:active { transform: scale(0.95); }
-        
-        .save-btn { background: linear-gradient(135deg, #22c55e, #16a34a); transition: all 0.3s ease; }
-        .save-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(22,163,74,0.4); }
-        .save-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
-        
-        select { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: left 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-left: 2.5rem; }
-        
-        .toast { transform: translateY(100px); opacity: 0; transition: all 0.4s ease; }
-        .toast.show { transform: translateY(0); opacity: 1; }
-        
-        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #22c55e; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        .book-bg { position: absolute; bottom: 20px; left: 20px; opacity: 0.05; font-size: 150px; color: #22c55e; transform: rotate(10deg); pointer-events: none; }
-        
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb { background: linear-gradient(135deg, #22c55e, #16a34a); border-radius: 10px; }
-        
-        .summary-table th { background: linear-gradient(135deg, #22c55e, #16a34a); color: white; }
-        .summary-table tr:nth-child(even) { background: rgba(22,163,74,0.05); }
-        .summary-table tr:hover { background: rgba(22,163,74,0.1); }
-        
-        .points-display { font-size: 2.5rem; font-weight: 800; background: linear-gradient(135deg, #22c55e, #16a34a); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-        .points-display.negative { background: linear-gradient(135deg, #ef4444, #dc2626); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-    </style>
+    .glass { background: rgba(255,255,255,0.85); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.5); box-shadow: 0 8px 32px rgba(22,163,74,0.1); }
+    .glass-card { background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); border: 1px solid rgba(22,163,74,0.1); box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
+    
+    .student-card { transition: all 0.3s ease; border: 3px solid transparent; }
+    .student-card:hover { transform: translateY(-4px); box-shadow: 0 15px 30px rgba(22,163,74,0.15); border-color: rgba(22,163,74,0.3); }
+    .student-card.selected { background: linear-gradient(135deg, rgba(22,163,74,0.15), rgba(34,197,94,0.08)); border-color: #22c55e; box-shadow: 0 10px 30px rgba(22,163,74,0.25); }
+    .student-card.recorded { border-color: #fbbf24; background: linear-gradient(135deg, rgba(251,191,36,0.1), rgba(245,158,11,0.05)); }
+    .student-card.absent { opacity: 0.6; border-color: #ef4444; background: rgba(239,68,68,0.05); }
+    
+    .tab-btn { transition: all 0.3s ease; position: relative; }
+    .tab-btn.active { background: linear-gradient(135deg, #22c55e, #16a34a); color: white; box-shadow: 0 4px 15px rgba(22,163,74,0.4); }
+    .tab-btn:not(.active):hover { background: rgba(22,163,74,0.1); }
+    
+    .atte-btn { transition: all 0.3s ease; border: 2px solid #e5e7eb; }
+    .atte-btn:hover { transform: scale(1.05); }
+    .atte-btn.selected { transform: scale(1.05); box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+    .atte-btn.present.selected { background: #22c55e; border-color: #22c55e; color: white; }
+    .atte-btn.absent-btn.selected { background: #ef4444; border-color: #ef4444; color: white; }
+    .atte-btn.late.selected { background: #f59e0b; border-color: #f59e0b; color: white; }
+    .atte-btn.excused.selected { background: #8b5cf6; border-color: #8b5cf6; color: white; }
+    
+    .grade-btn { transition: all 0.3s ease; border: 2px solid #e5e7eb; min-width: 70px; }
+    .grade-btn:hover { transform: scale(1.05); }
+    .grade-btn.selected { transform: scale(1.08); }
+    .grade-btn.excellent.selected { background: linear-gradient(135deg, #22c55e, #16a34a); border-color: #22c55e; color: white; }
+    .grade-btn.good.selected { background: linear-gradient(135deg, #3b82f6, #2563eb); border-color: #3b82f6; color: white; }
+    .grade-btn.acceptable.selected { background: linear-gradient(135deg, #f59e0b, #d97706); border-color: #f59e0b; color: white; }
+    .grade-btn.weak.selected { background: linear-gradient(135deg, #ef4444, #dc2626); border-color: #ef4444; color: white; }
+    
+    .deduct-btn { transition: all 0.2s ease; }
+    .deduct-btn:hover { transform: scale(1.1); }
+    .deduct-btn:active { transform: scale(0.95); }
+    
+    .save-btn { background: linear-gradient(135deg, #22c55e, #16a34a); transition: all 0.3s ease; }
+    .save-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(22,163,74,0.4); }
+    .save-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+    
+    select { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: left 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-left: 2.5rem; }
+    
+    .toast { transform: translateY(100px); opacity: 0; transition: all 0.4s ease; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    
+    .loader { border: 3px solid #f3f3f3; border-top: 3px solid #22c55e; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    
+    .book-bg { position: absolute; bottom: 20px; left: 20px; opacity: 0.05; font-size: 150px; color: #22c55e; transform: rotate(10deg); pointer-events: none; }
+    
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb { background: linear-gradient(135deg, #22c55e, #16a34a); border-radius: 10px; }
+    
+    .summary-table th { background: linear-gradient(135deg, #22c55e, #16a34a); color: white; }
+    .summary-table tr:nth-child(even) { background: rgba(22,163,74,0.05); }
+    .summary-table tr:hover { background: rgba(22,163,74,0.1); }
+    
+    .points-display { font-size: 2.5rem; font-weight: 800; background: linear-gradient(135deg, #22c55e, #16a34a); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .points-display.negative { background: linear-gradient(135deg, #ef4444, #dc2626); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+</style>
+
 </head>
 <body class="min-h-screen p-4 md:p-6">
+
+<div class="max-w-7xl mx-auto">
     
-    <div class="max-w-7xl mx-auto">
-        
-        <!-- الهيدر -->
-        <div class="glass rounded-2xl p-4 mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
-            <div class="flex items-center gap-4">
-                <div class="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-lg">
-                    <i class="fas fa-book-quran text-white text-2xl"></i>
-                </div>
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-800">القاعدة المدنية</h1>
-                    <p class="text-sm text-gray-500">نظام تسجيل الحفظ والمراجعة</p>
-                </div>
+    <div class="glass rounded-2xl p-4 mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="flex items-center gap-4">
+            <div class="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <i class="fas fa-book-quran text-white text-2xl"></i>
             </div>
-            
-            <div class="flex items-center gap-3">
-                <label class="text-sm font-medium text-gray-600">التاريخ:</label>
-                <input type="date" id="selectedDate" class="px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-primary-500 outline-none transition font-medium">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">القاعدة المدنية</h1>
+                <p class="text-sm text-gray-500">نظام تسجيل الحفظ والمراجعة</p>
             </div>
         </div>
         
-        <!-- التبويبات -->
-        <div class="flex gap-2 mb-6 flex-wrap justify-center">
-            <button class="tab-btn active px-6 py-3 rounded-xl font-bold flex items-center gap-2" data-tab="entry" onclick="switchTab('entry')">
-                <i class="fas fa-edit"></i>
-                <span>الإدخال اليومي</span>
-            </button>
-            <button class="tab-btn px-6 py-3 rounded-xl font-bold flex items-center gap-2" data-tab="reports" onclick="switchTab('reports')">
-                <i class="fas fa-chart-line"></i>
-                <span>التقارير</span>
-            </button>
-            <button class="tab-btn px-6 py-3 rounded-xl font-bold flex items-center gap-2" data-tab="summary" onclick="switchTab('summary')">
-                <i class="fas fa-list-check"></i>
-                <span>ملخص اليوم</span>
-            </button>
+        <div class="flex items-center gap-3">
+            <label class="text-sm font-medium text-gray-600">التاريخ:</label>
+            <input type="date" id="selectedDate" class="px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-primary-500 outline-none transition font-medium">
         </div>
+    </div>
+    
+    <div class="flex gap-2 mb-6 flex-wrap justify-center">
+        <button class="tab-btn active px-6 py-3 rounded-xl font-bold flex items-center gap-2" data-tab="entry" onclick="switchTab('entry')">
+            <i class="fas fa-edit"></i>
+            <span>الإدخال اليومي</span>
+        </button>
+        <button class="tab-btn px-6 py-3 rounded-xl font-bold flex items-center gap-2" data-tab="reports" onclick="switchTab('reports')">
+            <i class="fas fa-chart-line"></i>
+            <span>التقارير</span>
+        </button>
+        <button class="tab-btn px-6 py-3 rounded-xl font-bold flex items-center gap-2" data-tab="summary" onclick="switchTab('summary')">
+            <i class="fas fa-list-check"></i>
+            <span>ملخص اليوم</span>
+        </button>
+    </div>
+    
+    <div id="tabContent">
         
-        <!-- محتوى التبويبات -->
-        <div id="tabContent">
-            
-            <!-- ==================== تبويب الإدخال اليومي ==================== -->
-            <div id="entryTab" class="tab-content">
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    
-                    <!-- قائمة الطلاب -->
-                    <div class="lg:col-span-5">
-                        <div class="glass rounded-2xl p-6 relative overflow-hidden">
-                            <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                                <i class="fas fa-users text-primary-500"></i>
-                                قائمة الطلاب
-                                <span id="studentsCount" class="text-sm font-normal text-gray-500 mr-auto">(0 طالب)</span>
-                            </h2>
-                            
-                            <div id="loadingStudents" class="flex justify-center items-center py-10">
-                                <div class="loader"></div>
-                                <span class="mr-3 text-gray-500">جاري تحميل البيانات...</span>
-                            </div>
-                            
-                            <div id="studentsGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[500px] overflow-y-auto hidden"></div>
-                            
-                            <i class="fas fa-book-open book-bg"></i>
+        <div id="entryTab" class="tab-content">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <div class="lg:col-span-5">
+                    <div class="glass rounded-2xl p-6 relative overflow-hidden">
+                        <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                            <i class="fas fa-users text-primary-500"></i>
+                            قائمة الطلاب
+                            <span id="studentsCount" class="text-sm font-normal text-gray-500 mr-auto">(0 طالب)</span>
+                        </h2>
+                        
+                        <div id="loadingStudents" class="flex justify-center items-center py-10">
+                            <div class="loader"></div>
+                            <span class="mr-3 text-gray-500">جاري تحميل البيانات...</span>
                         </div>
+                        
+                        <div id="studentsGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[500px] overflow-y-auto hidden"></div>
+                        
+                        <i class="fas fa-book-open book-bg"></i>
                     </div>
-                    
-                    <!-- نموذج الإدخال -->
-                    <div class="lg:col-span-7">
-                        <div class="glass rounded-2xl p-6 relative">
+                </div>
+                
+                <div class="lg:col-span-7">
+                    <div class="glass rounded-2xl p-6 relative">
+                        
+                        <div id="formHeader" class="mb-6">
+                            <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                <i class="fas fa-user-edit text-primary-500"></i>
+                                <span id="formTitle">اختر طالباً للبدء</span>
+                            </h2>
+                            <p id="formSubtitle" class="text-sm text-gray-500 mt-1">اضغط على اسم الطالب من القائمة</p>
+                        </div>
+                        
+                        <form id="entryForm" class="space-y-6 hidden">
                             
-                            <div id="formHeader" class="mb-6">
-                                <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
-                                    <i class="fas fa-user-edit text-primary-500"></i>
-                                    <span id="formTitle">اختر طالباً للبدء</span>
-                                </h2>
-                                <p id="formSubtitle" class="text-sm text-gray-500 mt-1">اضغط على اسم الطالب من القائمة</p>
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-3">
+                                    <i class="fas fa-clipboard-check text-primary-500 ml-1"></i>
+                                    الحضور
+                                </label>
+                                <div class="grid grid-cols-4 gap-2">
+                                    <button type="button" class="atte-btn present py-3 px-2 rounded-xl text-center font-medium text-sm" data-value="حاضر" data-points="5" onclick="selectAttendance(this)">
+                                        <i class="fas fa-check block text-lg mb-1"></i>
+                                        حاضر
+                                        <span class="block text-xs text-gray-400">+5</span>
+                                    </button>
+                                    <button type="button" class="atte-btn absent-btn py-3 px-2 rounded-xl text-center font-medium text-sm" data-value="غائب" data-points="0" onclick="selectAttendance(this)">
+                                        <i class="fas fa-times block text-lg mb-1"></i>
+                                        غائب
+                                        <span class="block text-xs text-gray-400">0</span>
+                                    </button>
+                                    <button type="button" class="atte-btn late py-3 px-2 rounded-xl text-center font-medium text-sm" data-value="متأخر" data-points="3" onclick="selectAttendance(this)">
+                                        <i class="fas fa-clock block text-lg mb-1"></i>
+                                        متأخر
+                                        <span class="block text-xs text-gray-400">+3</span>
+                                    </button>
+                                    <button type="button" class="atte-btn excused py-3 px-2 rounded-xl text-center font-medium text-sm" data-value="مستأذن" data-points="2" onclick="selectAttendance(this)">
+                                        <i class="fas fa-hand block text-lg mb-1"></i>
+                                        مستأذن
+                                        <span class="block text-xs text-gray-400">+2</span>
+                                    </button>
+                                </div>
                             </div>
                             
-                            <form id="entryForm" class="space-y-6 hidden">
+                            <div id="gradesSection" class="space-y-6 hidden">
                                 
-                                <!-- الحضور -->
                                 <div>
                                     <label class="block text-sm font-bold text-gray-700 mb-3">
-                                        <i class="fas fa-clipboard-check text-primary-500 ml-1"></i>
-                                        الحضور
+                                        <i class="fas fa-book text-primary-500 ml-1"></i>
+                                        الدرس
+                                    </label>
+                                    <select id="lessonSelect" class="w-full py-3 px-4 rounded-xl border-2 border-gray-200 focus:border-primary-500 outline-none transition font-medium appearance-none">
+                                        <option value="">-- اختر الدرس --</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700 mb-3">
+                                        <i class="fas fa-star text-primary-500 ml-1"></i>
+                                        درجة الإتقان
                                     </label>
                                     <div class="grid grid-cols-4 gap-2">
-                                        <button type="button" class="atte-btn present py-3 px-2 rounded-xl text-center font-medium text-sm" data-value="حاضر" data-points="5" onclick="selectAttendance(this)">
-                                            <i class="fas fa-check block text-lg mb-1"></i>
-                                            حاضر
-                                            <span class="block text-xs text-gray-400">+5</span>
+                                        <button type="button" class="grade-btn excellent py-3 rounded-xl font-medium text-sm" data-value="10" data-type="save" onclick="selectGrade(this, 'save')">
+                                            <span class="block text-lg font-bold">10</span>
+                                            ممتاز
                                         </button>
-                                        <button type="button" class="atte-btn absent-btn py-3 px-2 rounded-xl text-center font-medium text-sm" data-value="غائب" data-points="0" onclick="selectAttendance(this)">
-                                            <i class="fas fa-times block text-lg mb-1"></i>
-                                            غائب
-                                            <span class="block text-xs text-gray-400">0</span>
+                                        <button type="button" class="grade-btn good py-3 rounded-xl font-medium text-sm" data-value="8" data-type="save" onclick="selectGrade(this, 'save')">
+                                            <span class="block text-lg font-bold">8</span>
+                                            جيد جداً
                                         </button>
-                                        <button type="button" class="atte-btn late py-3 px-2 rounded-xl text-center font-medium text-sm" data-value="متأخر" data-points="3" onclick="selectAttendance(this)">
-                                            <i class="fas fa-clock block text-lg mb-1"></i>
-                                            متأخر
-                                            <span class="block text-xs text-gray-400">+3</span>
+                                        <button type="button" class="grade-btn acceptable py-3 rounded-xl font-medium text-sm" data-value="6" data-type="save" onclick="selectGrade(this, 'save')">
+                                            <span class="block text-lg font-bold">6</span>
+                                            مقبول
                                         </button>
-                                        <button type="button" class="atte-btn excused py-3 px-2 rounded-xl text-center font-medium text-sm" data-value="مستأذن" data-points="2" onclick="selectAttendance(this)">
-                                            <i class="fas fa-hand block text-lg mb-1"></i>
-                                            مستأذن
-                                            <span class="block text-xs text-gray-400">+2</span>
+                                        <button type="button" class="grade-btn weak py-3 rounded-xl font-medium text-sm" data-value="4" data-type="save" onclick="selectGrade(this, 'save')">
+                                            <span class="block text-lg font-bold">4</span>
+                                            إعادة
                                         </button>
                                     </div>
                                 </div>
                                 
-                                <!-- قسم الدرجات -->
-                                <div id="gradesSection" class="space-y-6 hidden">
-                                    
-                                    <!-- اختيار الدرس -->
-                                    <div>
-                                        <label class="block text-sm font-bold text-gray-700 mb-3">
-                                            <i class="fas fa-book text-primary-500 ml-1"></i>
-                                            الدرس
-                                        </label>
-                                        <select id="lessonSelect" class="w-full py-3 px-4 rounded-xl border-2 border-gray-200 focus:border-primary-500 outline-none transition font-medium appearance-none">
-                                            <option value="">-- اختر الدرس --</option>
-                                        </select>
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700 mb-3">
+                                        <i class="fas fa-redo text-primary-500 ml-1"></i>
+                                        درجة المراجعة
+                                    </label>
+                                    <div class="grid grid-cols-4 gap-2">
+                                        <button type="button" class="grade-btn excellent py-3 rounded-xl font-medium text-sm" data-value="10" data-type="review" onclick="selectGrade(this, 'review')">
+                                            <span class="block text-lg font-bold">10</span>
+                                            ممتاز
+                                        </button>
+                                        <button type="button" class="grade-btn good py-3 rounded-xl font-medium text-sm" data-value="8" data-type="review" onclick="selectGrade(this, 'review')">
+                                            <span class="block text-lg font-bold">8</span>
+                                            جيد جداً
+                                        </button>
+                                        <button type="button" class="grade-btn acceptable py-3 rounded-xl font-medium text-sm" data-value="6" data-type="review" onclick="selectGrade(this, 'review')">
+                                            <span class="block text-lg font-bold">6</span>
+                                            مقبول
+                                        </button>
+                                        <button type="button" class="grade-btn weak py-3 rounded-xl font-medium text-sm" data-value="4" data-type="review" onclick="selectGrade(this, 'review')">
+                                            <span class="block text-lg font-bold">4</span>
+                                            إعادة
+                                        </button>
                                     </div>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700 mb-3">
+                                        <i class="fas fa-map-marker-alt text-primary-500 ml-1"></i>
+                                        أين وصل الطالب؟
+                                    </label>
+                                    <input type="text" id="currentLessonInput" placeholder="مثال: صفحة 25 - درس الفتحة" class="w-full py-3 px-4 rounded-xl border-2 border-gray-200 focus:border-primary-500 outline-none transition">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700 mb-3">
+                                        <i class="fas fa-calculator text-gold-500 ml-1"></i>
+                                        نقاط التحفيز
+                                        <span class="text-xs text-gray-400 font-normal">(تُحسب تلقائياً)</span>
+                                    </label>
                                     
-                                    <!-- درجة الإتقان (كانت الحفظ) -->
-                                    <div>
-                                        <label class="block text-sm font-bold text-gray-700 mb-3">
-                                            <i class="fas fa-star text-primary-500 ml-1"></i>
-                                            درجة الإتقان
-                                        </label>
-                                        <div class="grid grid-cols-4 gap-2">
-                                            <button type="button" class="grade-btn excellent py-3 rounded-xl font-medium text-sm" data-value="10" data-type="save" onclick="selectGrade(this, 'save')">
-                                                <span class="block text-lg font-bold">10</span>
-                                                ممتاز
-                                            </button>
-                                            <button type="button" class="grade-btn good py-3 rounded-xl font-medium text-sm" data-value="8" data-type="save" onclick="selectGrade(this, 'save')">
-                                                <span class="block text-lg font-bold">8</span>
-                                                جيد جداً
-                                            </button>
-                                            <button type="button" class="grade-btn acceptable py-3 rounded-xl font-medium text-sm" data-value="6" data-type="save" onclick="selectGrade(this, 'save')">
-                                                <span class="block text-lg font-bold">6</span>
-                                                مقبول
-                                            </button>
-                                            <button type="button" class="grade-btn weak py-3 rounded-xl font-medium text-sm" data-value="4" data-type="save" onclick="selectGrade(this, 'save')">
-                                                <span class="block text-lg font-bold">4</span>
-                                                إعادة
-                                            </button>
+                                    <div class="glass-card rounded-2xl p-4">
+                                        <div class="text-center mb-4">
+                                            <span id="pointsDisplay" class="points-display">0</span>
+                                            <p class="text-xs text-gray-500 mt-1">مجموع النقاط</p>
                                         </div>
-                                    </div>
-                                    
-                                    <!-- درجة المراجعة -->
-                                    <div>
-                                        <label class="block text-sm font-bold text-gray-700 mb-3">
-                                            <i class="fas fa-redo text-primary-500 ml-1"></i>
-                                            درجة المراجعة
-                                        </label>
-                                        <div class="grid grid-cols-4 gap-2">
-                                            <button type="button" class="grade-btn excellent py-3 rounded-xl font-medium text-sm" data-value="10" data-type="review" onclick="selectGrade(this, 'review')">
-                                                <span class="block text-lg font-bold">10</span>
-                                                ممتاز
-                                            </button>
-                                            <button type="button" class="grade-btn good py-3 rounded-xl font-medium text-sm" data-value="8" data-type="review" onclick="selectGrade(this, 'review')">
-                                                <span class="block text-lg font-bold">8</span>
-                                                جيد جداً
-                                            </button>
-                                            <button type="button" class="grade-btn acceptable py-3 rounded-xl font-medium text-sm" data-value="6" data-type="review" onclick="selectGrade(this, 'review')">
-                                                <span class="block text-lg font-bold">6</span>
-                                                مقبول
-                                            </button>
-                                            <button type="button" class="grade-btn weak py-3 rounded-xl font-medium text-sm" data-value="4" data-type="review" onclick="selectGrade(this, 'review')">
-                                                <span class="block text-lg font-bold">4</span>
-                                                إعادة
-                                            </button>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- أين وصل الطالب -->
-                                    <div>
-                                        <label class="block text-sm font-bold text-gray-700 mb-3">
-                                            <i class="fas fa-map-marker-alt text-primary-500 ml-1"></i>
-                                            أين وصل الطالب؟
-                                        </label>
-                                        <input type="text" id="currentLessonInput" placeholder="مثال: صفحة 25 - درس الفتحة" class="w-full py-3 px-4 rounded-xl border-2 border-gray-200 focus:border-primary-500 outline-none transition">
-                                    </div>
-                                    
-                                    <!-- النقاط -->
-                                    <div>
-                                        <label class="block text-sm font-bold text-gray-700 mb-3">
-                                            <i class="fas fa-calculator text-gold-500 ml-1"></i>
-                                            نقاط التحفيز
-                                            <span class="text-xs text-gray-400 font-normal">(تُحسب تلقائياً)</span>
-                                        </label>
                                         
-                                        <div class="glass-card rounded-2xl p-4">
-                                            <!-- عرض النقاط -->
-                                            <div class="text-center mb-4">
-                                                <span id="pointsDisplay" class="points-display">0</span>
-                                                <p class="text-xs text-gray-500 mt-1">مجموع النقاط</p>
-                                            </div>
-                                            
-                                            <!-- تفاصيل النقاط -->
-                                            <div class="grid grid-cols-3 gap-2 text-center text-xs mb-4 pb-4 border-b border-gray-200">
-                                                <div>
-                                                    <span class="text-gray-500">الحضور</span>
-                                                    <p id="attendancePoints" class="font-bold text-green-600">+0</p>
-                                                </div>
-                                                <div>
-                                                    <span class="text-gray-500">الإتقان</span>
-                                                    <p id="savePoints" class="font-bold text-blue-600">+0</p>
-                                                </div>
-                                                <div>
-                                                    <span class="text-gray-500">المراجعة</span>
-                                                    <p id="reviewPoints" class="font-bold text-purple-600">+0</p>
-                                                </div>
-                                            </div>
-                                            
-                                            <!-- أزرار الخصم -->
+                                        <div class="grid grid-cols-3 gap-2 text-center text-xs mb-4 pb-4 border-b border-gray-200">
                                             <div>
-                                                <p class="text-xs text-gray-500 mb-2 text-center">خصم نقاط:</p>
-                                                <div class="flex justify-center gap-3">
-                                                    <button type="button" class="deduct-btn w-12 h-12 rounded-full bg-red-100 text-red-600 font-bold text-sm hover:bg-red-200" onclick="deductPoints(1)">
-                                                        -1
-                                                    </button>
-                                                    <button type="button" class="deduct-btn w-12 h-12 rounded-full bg-red-200 text-red-700 font-bold text-sm hover:bg-red-300" onclick="deductPoints(3)">
-                                                        -3
-                                                    </button>
-                                                    <button type="button" class="deduct-btn w-12 h-12 rounded-full bg-red-300 text-red-800 font-bold text-sm hover:bg-red-400" onclick="deductPoints(5)">
-                                                        -5
-                                                    </button>
-                                                </div>
-                                                <p id="deductionsDisplay" class="text-xs text-red-500 text-center mt-2 hidden">الخصومات: <span>0</span></p>
+                                                <span class="text-gray-500">الحضور</span>
+                                                <p id="attendancePoints" class="font-bold text-green-600">+0</p>
+                                            </div>
+                                            <div>
+                                                <span class="text-gray-500">الإتقان</span>
+                                                <p id="savePoints" class="font-bold text-blue-600">+0</p>
+                                            </div>
+                                            <div>
+                                                <span class="text-gray-500">المراجعة</span>
+                                                <p id="reviewPoints" class="font-bold text-purple-600">+0</p>
                                             </div>
                                         </div>
                                         
-                                        <input type="hidden" id="pointsInput" value="0">
+                                        <div>
+                                            <p class="text-xs text-gray-500 mb-2 text-center">خصم نقاط:</p>
+                                            <div class="flex justify-center gap-3">
+                                                <button type="button" class="deduct-btn w-12 h-12 rounded-full bg-red-100 text-red-600 font-bold text-sm hover:bg-red-200" onclick="deductPoints(1)">
+                                                    -1
+                                                </button>
+                                                <button type="button" class="deduct-btn w-12 h-12 rounded-full bg-red-200 text-red-700 font-bold text-sm hover:bg-red-300" onclick="deductPoints(3)">
+                                                    -3
+                                                </button>
+                                                <button type="button" class="deduct-btn w-12 h-12 rounded-full bg-red-300 text-red-800 font-bold text-sm hover:bg-red-400" onclick="deductPoints(5)">
+                                                    -5
+                                                </button>
+                                                
+                                                <button type="button" class="deduct-btn w-12 h-12 rounded-full bg-gray-200 text-gray-600 font-bold text-lg hover:bg-gray-300" onclick="resetDeductions()" title="إلغاء">
+                                                    <i class="fas fa-undo"></i>
+                                                </button>
+                                            </div>
+                                            <p id="deductionsDisplay" class="text-xs text-red-500 text-center mt-2 hidden">الخصومات: <span>0</span></p>
+                                        </div>
                                     </div>
                                     
-                                    <!-- الملاحظات -->
-                                    <div>
-                                        <label class="block text-sm font-bold text-gray-700 mb-3">
-                                            <i class="fas fa-comment text-primary-500 ml-1"></i>
-                                            ملاحظات
-                                        </label>
-                                        <textarea id="notesInput" rows="2" placeholder="أضف ملاحظات (اختياري)..." class="w-full py-3 px-4 rounded-xl border-2 border-gray-200 focus:border-primary-500 outline-none transition resize-none"></textarea>
-                                    </div>
+                                    <input type="hidden" id="pointsInput" value="0">
                                 </div>
                                 
-                                <!-- زر الحفظ -->
-                                <button type="submit" id="saveBtn" class="save-btn w-full py-4 rounded-xl text-white font-bold text-lg flex items-center justify-center gap-2" disabled>
-                                    <i class="fas fa-save"></i>
-                                    <span>حفظ البيانات</span>
-                                </button>
-                            </form>
-                            
-                            <div id="selectPrompt" class="text-center py-16">
-                                <i class="fas fa-hand-pointer text-6xl text-gray-300 mb-4"></i>
-                                <p class="text-gray-400 text-lg">اختر طالباً من القائمة للبدء بالتسجيل</p>
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700 mb-3">
+                                        <i class="fas fa-comment text-primary-500 ml-1"></i>
+                                        ملاحظات
+                                    </label>
+                                    <textarea id="notesInput" rows="2" placeholder="أضف ملاحظات (اختياري)..." class="w-full py-3 px-4 rounded-xl border-2 border-gray-200 focus:border-primary-500 outline-none transition resize-none"></textarea>
+                                </div>
                             </div>
+                            
+                            <button type="submit" id="saveBtn" class="save-btn w-full py-4 rounded-xl text-white font-bold text-lg flex items-center justify-center gap-2" disabled>
+                                <i class="fas fa-save"></i>
+                                <span>حفظ البيانات</span>
+                            </button>
+                        </form>
+                        
+                        <div id="selectPrompt" class="text-center py-16">
+                            <i class="fas fa-hand-pointer text-6xl text-gray-300 mb-4"></i>
+                            <p class="text-gray-400 text-lg">اختر طالباً من القائمة للبدء بالتسجيل</p>
                         </div>
                     </div>
                 </div>
             </div>
-            
-            <!-- ==================== تبويب التقارير ==================== -->
-            <div id="reportsTab" class="tab-content hidden">
-                <div class="glass rounded-2xl p-6">
-                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                        <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
-                            <i class="fas fa-chart-line text-primary-500"></i>
-                            تقارير الطلاب
-                        </h2>
-                        <div class="flex gap-2">
-                            <button onclick="exportReports('pdf')" class="px-4 py-2 bg-red-500 text-white rounded-xl font-medium flex items-center gap-2 hover:bg-red-600 transition">
-                                <i class="fas fa-file-pdf"></i>
-                                PDF
-                            </button>
-                            <button onclick="exportReports('excel')" class="px-4 py-2 bg-green-600 text-white rounded-xl font-medium flex items-center gap-2 hover:bg-green-700 transition">
-                                <i class="fas fa-file-excel"></i>
-                                Excel
-                            </button>
-                        </div>
+        </div>
+        
+        <div id="reportsTab" class="tab-content hidden">
+            <div class="glass rounded-2xl p-6">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                    <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fas fa-chart-line text-primary-500"></i>
+                        تقارير الطلاب
+                    </h2>
+                    <div class="flex gap-2">
+                        <button onclick="exportReports('pdf')" class="px-4 py-2 bg-red-500 text-white rounded-xl font-medium flex items-center gap-2 hover:bg-red-600 transition">
+                            <i class="fas fa-file-pdf"></i>
+                            PDF
+                        </button>
+                        <button onclick="exportReports('excel')" class="px-4 py-2 bg-green-600 text-white rounded-xl font-medium flex items-center gap-2 hover:bg-green-700 transition">
+                            <i class="fas fa-file-excel"></i>
+                            Excel
+                        </button>
                     </div>
-                    
-                    <div class="mb-6">
-                        <select id="reportStudentSelect" onchange="loadStudentReport()" class="w-full md:w-64 py-3 px-4 rounded-xl border-2 border-gray-200 focus:border-primary-500 outline-none transition font-medium appearance-none">
-                            <option value="">-- اختر طالباً --</option>
-                        </select>
-                    </div>
-                    
+                </div>
+                
+                <div class="mb-6">
+                    <select id="reportStudentSelect" onchange="loadStudentReport()" class="w-full md:w-64 py-3 px-4 rounded-xl border-2 border-gray-200 focus:border-primary-500 outline-none transition font-medium appearance-none">
+                        <option value="">-- اختر طالباً --</option>
+                    </select>
+                </div>
+                
+                <div id="reportContentToExport">
                     <div id="reportChartContainer" class="hidden">
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             <div class="glass-card rounded-2xl p-6">
@@ -408,106 +399,380 @@
                             </div>
                         </div>
                     </div>
-                    
-                    <div id="noReportData" class="text-center py-16">
-                        <i class="fas fa-chart-pie text-6xl text-gray-300 mb-4"></i>
-                        <p class="text-gray-400 text-lg">اختر طالباً لعرض تقريره</p>
-                    </div>
+                </div>
+                
+                <div id="noReportData" class="text-center py-16">
+                    <i class="fas fa-chart-pie text-6xl text-gray-300 mb-4"></i>
+                    <p class="text-gray-400 text-lg">اختر طالباً لعرض تقريره</p>
                 </div>
             </div>
-            
-            <!-- ==================== تبويب ملخص اليوم ==================== -->
-            <div id="summaryTab" class="tab-content hidden">
-                <div class="glass rounded-2xl p-6">
-                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                        <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
-                            <i class="fas fa-list-check text-primary-500"></i>
-                            ملخص اليوم
-                            <span id="summaryDate" class="text-sm font-normal text-gray-500"></span>
-                        </h2>
-                        <div class="flex gap-2">
-                            <button onclick="exportSummary('pdf')" class="px-4 py-2 bg-red-500 text-white rounded-xl font-medium flex items-center gap-2 hover:bg-red-600 transition">
-                                <i class="fas fa-file-pdf"></i>
-                                PDF
-                            </button>
-                            <button onclick="exportSummary('excel')" class="px-4 py-2 bg-green-600 text-white rounded-xl font-medium flex items-center gap-2 hover:bg-green-700 transition">
-                                <i class="fas fa-file-excel"></i>
-                                Excel
-                            </button>
-                        </div>
+        </div>
+        
+        <div id="summaryTab" class="tab-content hidden">
+            <div class="glass rounded-2xl p-6">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                    <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fas fa-list-check text-primary-500"></i>
+                        ملخص اليوم
+                        <span id="summaryDate" class="text-sm font-normal text-gray-500"></span>
+                    </h2>
+                    <div class="flex gap-2">
+                        <button onclick="exportSummary('pdf')" class="px-4 py-2 bg-red-500 text-white rounded-xl font-medium flex items-center gap-2 hover:bg-red-600 transition">
+                            <i class="fas fa-file-pdf"></i>
+                            PDF
+                        </button>
+                        <button onclick="exportSummary('excel')" class="px-4 py-2 bg-green-600 text-white rounded-xl font-medium flex items-center gap-2 hover:bg-green-700 transition">
+                            <i class="fas fa-file-excel"></i>
+                            Excel
+                        </button>
                     </div>
-                    
-                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-                        <div class="glass-card rounded-xl p-4 text-center">
-                            <p class="text-3xl font-bold text-primary-600" id="summaryTotal">0</p>
-                            <p class="text-xs text-gray-500">إجمالي الطلاب</p>
-                        </div>
-                        <div class="glass-card rounded-xl p-4 text-center">
-                            <p class="text-3xl font-bold text-green-600" id="summaryPresent">0</p>
-                            <p class="text-xs text-gray-500">حاضر</p>
-                        </div>
-                        <div class="glass-card rounded-xl p-4 text-center">
-                            <p class="text-3xl font-bold text-red-500" id="summaryAbsent">0</p>
-                            <p class="text-xs text-gray-500">غائب</p>
-                        </div>
-                        <div class="glass-card rounded-xl p-4 text-center">
-                            <p class="text-3xl font-bold text-yellow-500" id="summaryLate">0</p>
-                            <p class="text-xs text-gray-500">متأخر</p>
-                        </div>
-                        <div class="glass-card rounded-xl p-4 text-center">
-                            <p class="text-3xl font-bold text-purple-500" id="summaryExcused">0</p>
-                            <p class="text-xs text-gray-500">مستأذن</p>
-                        </div>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                    <div class="glass-card rounded-xl p-4 text-center">
+                        <p class="text-3xl font-bold text-primary-600" id="summaryTotal">0</p>
+                        <p class="text-xs text-gray-500">إجمالي الطلاب</p>
                     </div>
-                    
-                    <div class="overflow-x-auto">
-                        <table class="summary-table w-full rounded-xl overflow-hidden">
-                            <thead>
-                                <tr>
-                                    <th class="py-3 px-4 text-right">الطالب</th>
-                                    <th class="py-3 px-4 text-center">الحضور</th>
-                                    <th class="py-3 px-4 text-right">الدرس</th>
-                                    <th class="py-3 px-4 text-center">الإتقان</th>
-                                    <th class="py-3 px-4 text-center">المراجعة</th>
-                                    <th class="py-3 px-4 text-center">النقاط</th>
-                                    <th class="py-3 px-4 text-right">وصل إلى</th>
-                                </tr>
-                            </thead>
-                            <tbody id="summaryTableBody">
-                                <tr>
-                                    <td colspan="7" class="py-10 text-center text-gray-400">
-                                        <i class="fas fa-inbox text-4xl mb-2 block"></i>
-                                        لا توجد بيانات مسجلة اليوم
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div class="glass-card rounded-xl p-4 text-center">
+                        <p class="text-3xl font-bold text-green-600" id="summaryPresent">0</p>
+                        <p class="text-xs text-gray-500">حاضر</p>
                     </div>
+                    <div class="glass-card rounded-xl p-4 text-center">
+                        <p class="text-3xl font-bold text-red-500" id="summaryAbsent">0</p>
+                        <p class="text-xs text-gray-500">غائب</p>
+                    </div>
+                    <div class="glass-card rounded-xl p-4 text-center">
+                        <p class="text-3xl font-bold text-yellow-500" id="summaryLate">0</p>
+                        <p class="text-xs text-gray-500">متأخر</p>
+                    </div>
+                    <div class="glass-card rounded-xl p-4 text-center">
+                        <p class="text-3xl font-bold text-purple-500" id="summaryExcused">0</p>
+                        <p class="text-xs text-gray-500">مستأذن</p>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto" id="summaryTableContainer">
+                    <table class="summary-table w-full rounded-xl overflow-hidden" id="summaryTable">
+                        <thead>
+                            <tr>
+                                <th class="py-3 px-4 text-right">الطالب</th>
+                                <th class="py-3 px-4 text-center">الحضور</th>
+                                <th class="py-3 px-4 text-right">الدرس</th>
+                                <th class="py-3 px-4 text-center">الإتقان</th>
+                                <th class="py-3 px-4 text-center">المراجعة</th>
+                                <th class="py-3 px-4 text-center">النقاط</th>
+                                <th class="py-3 px-4 text-right">وصل إلى</th>
+                            </tr>
+                        </thead>
+                        <tbody id="summaryTableBody">
+                            <tr>
+                                <td colspan="7" class="py-10 text-center text-gray-400">
+                                    <i class="fas fa-inbox text-4xl mb-2 block"></i>
+                                    لا توجد بيانات مسجلة اليوم
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
+</div>
+
+<div id="toast" class="toast fixed bottom-6 left-6 right-6 md:left-auto md:right-6 md:w-96 bg-primary-500 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 z-50">
+    <i id="toastIcon" class="fas fa-check-circle text-2xl"></i>
+    <span id="toastMessage" class="font-medium">تم الحفظ بنجاح</span>
+</div>
+
+<script>
+    // ==================== المتغيرات العامة ====================
+    const API_BASE = 'https://n8n.srv1238717.hstgr.cloud/webhook';
+    const GET_DATA_URL = `${API_BASE}/Get-data`;
+    const SUBMIT_URL = `${API_BASE}/Submit-daily`;
     
-    <!-- Toast -->
-    <div id="toast" class="toast fixed bottom-6 left-6 right-6 md:left-auto md:right-6 md:w-96 bg-primary-500 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 z-50">
-        <i id="toastIcon" class="fas fa-check-circle text-2xl"></i>
-        <span id="toastMessage" class="font-medium">تم الحفظ بنجاح</span>
-    </div>
+    let students = [];
+    let lessons = [];
+    let selectedStudent = null;
+    let todayRecords = [];
     
-    <!-- ==================== JavaScript ==================== -->
-    <script>
-        // ==================== المتغيرات العامة ====================
-        const API_BASE = 'https://n8n.srv1238717.hstgr.cloud/webhook';
-        const GET_DATA_URL = `${API_BASE}/Get-data`;
-        const SUBMIT_URL = `${API_BASE}/Submit-daily`;
+    // بيانات النموذج مع النقاط
+    let formData = {
+        attendance: null,
+        attendancePoints: 0,
+        lesson: null,
+        saveScore: null,
+        savePoints: 0,
+        reviewScore: null,
+        reviewPoints: 0,
+        deductions: 0,
+        totalPoints: 0,
+        currentLesson: '',
+        notes: ''
+    };
+    
+    // ==================== تهيئة التطبيق ====================
+    document.addEventListener('DOMContentLoaded', async function() {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('selectedDate').value = today;
         
-        let students = [];
-        let lessons = [];
-        let selectedStudent = null;
-        let todayRecords = [];
+        await loadData();
         
-        // بيانات النموذج مع النقاط
-        let formData = {
+        document.getElementById('entryForm').addEventListener('submit', handleSubmit);
+        document.getElementById('lessonSelect').addEventListener('change', validateForm);
+    });
+    
+    // ==================== تحميل البيانات ====================
+    async function loadData() {
+        try {
+            const response = await fetch(GET_DATA_URL);
+            const data = await response.json();
+            
+            students = data.filter(item => item.Student_na);
+            lessons = data.filter(item => item.lesson_name);
+            
+            renderStudents();
+            populateLessons();
+            populateReportStudents();
+            
+            document.getElementById('studentsCount').textContent = `(${students.length} طالب)`;
+            
+        } catch (error) {
+            console.error('خطأ في تحميل البيانات:', error);
+            showToast('فشل تحميل البيانات', 'error');
+        }
+    }
+    
+    // ==================== عرض الطلاب ====================
+    function renderStudents() {
+        const grid = document.getElementById('studentsGrid');
+        const loading = document.getElementById('loadingStudents');
+        
+        loading.classList.add('hidden');
+        grid.classList.remove('hidden');
+        
+        grid.innerHTML = students.map(student => {
+            const record = todayRecords.find(r => r.student_na === student.Student_na);
+            let statusClass = '';
+            let statusIcon = '';
+            
+            if (record) {
+                if (record.atte === 'غائب') {
+                    statusClass = 'absent';
+                    statusIcon = '<i class="fas fa-times-circle text-red-500 absolute top-1 left-1"></i>';
+                } else {
+                    statusClass = 'recorded';
+                    statusIcon = '<i class="fas fa-check-circle text-yellow-500 absolute top-1 left-1"></i>';
+                }
+            }
+            
+            /* التعديل الثاني: عرض مستوى الطالب الحقيقي */
+            return `
+                <div class="student-card glass-card rounded-xl p-4 cursor-pointer text-center relative ${statusClass} ${selectedStudent?.id === student.id ? 'selected' : ''}" 
+                     onclick="selectStudent(${student.id})">
+                    ${statusIcon}
+                    <div class="w-12 h-12 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full mx-auto mb-2 flex items-center justify-center text-white font-bold text-lg">
+                        ${student.Student_na.charAt(0)}
+                    </div>
+                    <p class="font-bold text-gray-800 text-sm truncate">${student.Student_na}</p>
+                    <p class="text-xs text-gray-500">${student.Student_lev || 'غير محدد'}</p>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    // ==================== ملء القوائم ====================
+    function populateLessons() {
+        const select = document.getElementById('lessonSelect');
+        select.innerHTML = '<option value="">-- اختر الدرس --</option>' + 
+            lessons.map(lesson => `
+                <option value="${lesson.lesson_name}">${lesson.lesson_name} (ص${lesson.page_number})</option>
+            `).join('');
+    }
+    
+    function populateReportStudents() {
+        const select = document.getElementById('reportStudentSelect');
+        select.innerHTML = '<option value="">-- اختر طالباً --</option>' + 
+            students.map(student => `
+                <option value="${student.Student_na}">${student.Student_na}</option>
+            `).join('');
+    }
+    
+    // ==================== اختيار طالب ====================
+    function selectStudent(id) {
+        selectedStudent = students.find(s => s.id === id);
+        
+        document.getElementById('formTitle').textContent = selectedStudent.Student_na;
+        /* التعديل الثاني: عرض مستوى الطالب الحقيقي في العنوان الفرعي */
+        document.getElementById('formSubtitle').textContent = `المستوى: ${selectedStudent.Student_lev || 'غير محدد'}`;
+        
+        document.getElementById('selectPrompt').classList.add('hidden');
+        document.getElementById('entryForm').classList.remove('hidden');
+        
+        resetForm();
+        renderStudents();
+    }
+    
+    // ==================== اختيار الحضور ====================
+    function selectAttendance(btn) {
+        document.querySelectorAll('.atte-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        
+        formData.attendance = btn.dataset.value;
+        formData.attendancePoints = parseInt(btn.dataset.points);
+        
+        const gradesSection = document.getElementById('gradesSection');
+        if (formData.attendance === 'حاضر' || formData.attendance === 'متأخر') {
+            gradesSection.classList.remove('hidden');
+        } else {
+            gradesSection.classList.add('hidden');
+            // إعادة تعيين درجات الإتقان والمراجعة للغائب/المستأذن
+            formData.saveScore = null;
+            formData.savePoints = 0;
+            formData.reviewScore = null;
+            formData.reviewPoints = 0;
+            document.querySelectorAll('.grade-btn').forEach(b => b.classList.remove('selected'));
+        }
+        
+        calculateTotalPoints();
+        validateForm();
+    }
+    
+    // ==================== اختيار الدرجة ====================
+    function selectGrade(btn, type) {
+        document.querySelectorAll(`.grade-btn[data-type="${type}"]`).forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        
+        const value = parseInt(btn.dataset.value);
+        
+        if (type === 'save') {
+            formData.saveScore = value;
+            // النقاط: 10، 8، 6 تضاف كما هي، 4 (إعادة) = 0
+            formData.savePoints = (value >= 6) ? value : 0;
+        } else {
+            formData.reviewScore = value;
+            formData.reviewPoints = (value >= 6) ? value : 0;
+        }
+        
+        calculateTotalPoints();
+        validateForm();
+    }
+    
+    // ==================== خصم النقاط ====================
+    function deductPoints(amount) {
+        formData.deductions += amount;
+        
+        const deductionsDisplay = document.getElementById('deductionsDisplay');
+        deductionsDisplay.classList.remove('hidden');
+        deductionsDisplay.querySelector('span').textContent = formData.deductions;
+        
+        calculateTotalPoints();
+    }
+    
+    // التعديل الأول: دالة إلغاء الخصم
+    function resetDeductions() {
+        formData.deductions = 0;
+        
+        const deductionsDisplay = document.getElementById('deductionsDisplay');
+        deductionsDisplay.classList.add('hidden');
+        
+        calculateTotalPoints();
+    }
+    
+    // ==================== حساب مجموع النقاط ====================
+    function calculateTotalPoints() {
+        // المعادلة: الحضور + الإتقان + المراجعة - الخصومات
+        formData.totalPoints = formData.attendancePoints + formData.savePoints + formData.reviewPoints - formData.deductions;
+        
+        // تحديث العرض
+        document.getElementById('attendancePoints').textContent = `+${formData.attendancePoints}`;
+        document.getElementById('savePoints').textContent = `+${formData.savePoints}`;
+        document.getElementById('reviewPoints').textContent = `+${formData.reviewPoints}`;
+        
+        const pointsDisplay = document.getElementById('pointsDisplay');
+        pointsDisplay.textContent = formData.totalPoints;
+        
+        // تغيير اللون للسالب
+        if (formData.totalPoints < 0) {
+            pointsDisplay.classList.add('negative');
+        } else {
+            pointsDisplay.classList.remove('negative');
+        }
+        
+        document.getElementById('pointsInput').value = formData.totalPoints;
+    }
+    
+    // ==================== التحقق من النموذج ====================
+    function validateForm() {
+        const saveBtn = document.getElementById('saveBtn');
+        let isValid = false;
+        
+        if (formData.attendance === 'غائب' || formData.attendance === 'مستأذن') {
+            isValid = true;
+        } else if (formData.attendance === 'حاضر' || formData.attendance === 'متأخر') {
+            const lesson = document.getElementById('lessonSelect').value;
+            isValid = lesson && formData.saveScore && formData.reviewScore;
+        }
+        
+        saveBtn.disabled = !isValid;
+    }
+    
+    // ==================== إرسال البيانات ====================
+    async function handleSubmit(e) {
+        e.preventDefault();
+        
+        const saveBtn = document.getElementById('saveBtn');
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<div class="loader mx-auto"></div>';
+        
+        const payload = {
+            student_na: selectedStudent.Student_na,
+            lesson_na: document.getElementById('lessonSelect').value || '',
+            save_sc: formData.saveScore || 0,
+            review_sc: formData.reviewScore || 0,
+            points: formData.totalPoints,
+            atte: formData.attendance,
+            notes: document.getElementById('notesInput').value,
+            date: document.getElementById('selectedDate').value,
+            current_lesson: document.getElementById('currentLessonInput').value
+        };
+        
+        try {
+            const response = await fetch(SUBMIT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            
+            if (response.ok) {
+                todayRecords.push(payload);
+                
+                showToast('تم حفظ البيانات بنجاح ✓', 'success');
+                
+                updateSummary();
+                renderStudents();
+                
+                resetForm();
+                selectedStudent = null;
+                document.getElementById('selectPrompt').classList.remove('hidden');
+                document.getElementById('entryForm').classList.add('hidden');
+                document.getElementById('formTitle').textContent = 'اختر طالباً للبدء';
+                document.getElementById('formSubtitle').textContent = 'اضغط على اسم الطالب من القائمة';
+                
+            } else {
+                showToast('فشل حفظ البيانات', 'error');
+            }
+        } catch (error) {
+            console.error('خطأ:', error);
+            showToast('خطأ في الاتصال', 'error');
+        }
+        
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<i class="fas fa-save"></i><span>حفظ البيانات</span>';
+    }
+    
+    // ==================== إعادة تعيين النموذج ====================
+    function resetForm() {
+        formData = {
             attendance: null,
             attendancePoints: 0,
             lesson: null,
@@ -521,427 +786,273 @@
             notes: ''
         };
         
-        // ==================== تهيئة التطبيق ====================
-        document.addEventListener('DOMContentLoaded', async function() {
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('selectedDate').value = today;
-            
-            await loadData();
-            
-            document.getElementById('entryForm').addEventListener('submit', handleSubmit);
-            document.getElementById('lessonSelect').addEventListener('change', validateForm);
-        });
+        document.querySelectorAll('.atte-btn, .grade-btn').forEach(b => b.classList.remove('selected'));
+        document.getElementById('lessonSelect').value = '';
+        document.getElementById('pointsInput').value = '0';
+        document.getElementById('pointsDisplay').textContent = '0';
+        document.getElementById('pointsDisplay').classList.remove('negative');
+        document.getElementById('attendancePoints').textContent = '+0';
+        document.getElementById('savePoints').textContent = '+0';
+        document.getElementById('reviewPoints').textContent = '+0';
+        document.getElementById('deductionsDisplay').classList.add('hidden');
+        document.getElementById('deductionsDisplay').querySelector('span').textContent = '0';
+        document.getElementById('currentLessonInput').value = '';
+        document.getElementById('notesInput').value = '';
+        document.getElementById('gradesSection').classList.add('hidden');
+        document.getElementById('saveBtn').disabled = true;
+    }
+    
+    // ==================== تحديث الملخص ====================
+    function updateSummary() {
+        const date = document.getElementById('selectedDate').value;
+        document.getElementById('summaryDate').textContent = `- ${date}`;
         
-        // ==================== تحميل البيانات ====================
-        async function loadData() {
-            try {
-                const response = await fetch(GET_DATA_URL);
-                const data = await response.json();
-                
-                students = data.filter(item => item.Student_na);
-                lessons = data.filter(item => item.lesson_name);
-                
-                renderStudents();
-                populateLessons();
-                populateReportStudents();
-                
-                document.getElementById('studentsCount').textContent = `(${students.length} طالب)`;
-                
-            } catch (error) {
-                console.error('خطأ في تحميل البيانات:', error);
-                showToast('فشل تحميل البيانات', 'error');
-            }
-        }
+        const dateRecords = todayRecords.filter(r => r.date === date);
         
-        // ==================== عرض الطلاب ====================
-        function renderStudents() {
-            const grid = document.getElementById('studentsGrid');
-            const loading = document.getElementById('loadingStudents');
-            
-            loading.classList.add('hidden');
-            grid.classList.remove('hidden');
-            
-            grid.innerHTML = students.map(student => {
-                const record = todayRecords.find(r => r.student_na === student.Student_na);
-                let statusClass = '';
-                let statusIcon = '';
-                
-                if (record) {
-                    if (record.atte === 'غائب') {
-                        statusClass = 'absent';
-                        statusIcon = '<i class="fas fa-times-circle text-red-500 absolute top-1 left-1"></i>';
-                    } else {
-                        statusClass = 'recorded';
-                        statusIcon = '<i class="fas fa-check-circle text-yellow-500 absolute top-1 left-1"></i>';
-                    }
-                }
+        document.getElementById('summaryTotal').textContent = students.length;
+        document.getElementById('summaryPresent').textContent = dateRecords.filter(r => r.atte === 'حاضر').length;
+        document.getElementById('summaryAbsent').textContent = dateRecords.filter(r => r.atte === 'غائب').length;
+        document.getElementById('summaryLate').textContent = dateRecords.filter(r => r.atte === 'متأخر').length;
+        document.getElementById('summaryExcused').textContent = dateRecords.filter(r => r.atte === 'مستأذن').length;
+        
+        const tbody = document.getElementById('summaryTableBody');
+        if (dateRecords.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="py-10 text-center text-gray-400">
+                        <i class="fas fa-inbox text-4xl mb-2 block"></i>
+                        لا توجد بيانات مسجلة اليوم
+                    </td>
+                </tr>
+            `;
+        } else {
+            tbody.innerHTML = dateRecords.map(r => {
+                let atteClass = '';
+                if (r.atte === 'حاضر') atteClass = 'text-green-600 bg-green-100';
+                else if (r.atte === 'غائب') atteClass = 'text-red-600 bg-red-100';
+                else if (r.atte === 'متأخر') atteClass = 'text-yellow-600 bg-yellow-100';
+                else atteClass = 'text-purple-600 bg-purple-100';
                 
                 return `
-                    <div class="student-card glass-card rounded-xl p-4 cursor-pointer text-center relative ${statusClass} ${selectedStudent?.id === student.id ? 'selected' : ''}" 
-                         onclick="selectStudent(${student.id})">
-                        ${statusIcon}
-                        <div class="w-12 h-12 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full mx-auto mb-2 flex items-center justify-center text-white font-bold text-lg">
-                            ${student.Student_na.charAt(0)}
-                        </div>
-                        <p class="font-bold text-gray-800 text-sm truncate">${student.Student_na}</p>
-                        <p class="text-xs text-gray-500">${student.Student_lev || 'مبتدئ'}</p>
-                    </div>
+                    <tr>
+                        <td class="py-3 px-4 font-medium">${r.student_na}</td>
+                        <td class="py-3 px-4 text-center"><span class="px-3 py-1 rounded-full text-sm ${atteClass}">${r.atte}</span></td>
+                        <td class="py-3 px-4 text-sm">${r.lesson_na || '-'}</td>
+                        <td class="py-3 px-4 text-center font-bold">${r.save_sc || '-'}</td>
+                        <td class="py-3 px-4 text-center font-bold">${r.review_sc || '-'}</td>
+                        <td class="py-3 px-4 text-center"><span class="text-primary-600 font-bold">${r.points}</span></td>
+                        <td class="py-3 px-4 text-sm text-gray-600">${r.current_lesson || '-'}</td>
+                    </tr>
                 `;
             }).join('');
         }
+    }
+    
+    // ==================== التبويبات ====================
+    function switchTab(tab) {
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.tab === tab) btn.classList.add('active');
+        });
         
-        // ==================== ملء القوائم ====================
-        function populateLessons() {
-            const select = document.getElementById('lessonSelect');
-            select.innerHTML = '<option value="">-- اختر الدرس --</option>' + 
-                lessons.map(lesson => `
-                    <option value="${lesson.lesson_name}">${lesson.lesson_name} (ص${lesson.page_number})</option>
-                `).join('');
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+        document.getElementById(`${tab}Tab`).classList.remove('hidden');
+        
+        if (tab === 'summary') updateSummary();
+    }
+    
+    // ==================== تقارير الطالب ====================
+    // التعديل الرابع: إصلاح التقارير الوهمية واستخدام البيانات الحقيقية من todayRecords
+    function loadStudentReport() {
+        const studentName = document.getElementById('reportStudentSelect').value;
+        const container = document.getElementById('reportChartContainer');
+        const noData = document.getElementById('noReportData');
+        
+        if (!studentName) {
+            container.classList.add('hidden');
+            noData.classList.remove('hidden');
+            return;
         }
         
-        function populateReportStudents() {
-            const select = document.getElementById('reportStudentSelect');
-            select.innerHTML = '<option value="">-- اختر طالباً --</option>' + 
-                students.map(student => `
-                    <option value="${student.Student_na}">${student.Student_na}</option>
-                `).join('');
+        // فلترة السجلات للطالب المحدد
+        const studentRecords = todayRecords.filter(r => r.student_na === studentName);
+        
+        if (studentRecords.length === 0) {
+            container.classList.add('hidden');
+            noData.classList.remove('hidden');
+            noData.querySelector('p').textContent = 'لا توجد بيانات لهذا الطالب';
+            
+            // إعادة تعيين الإحصائيات
+            document.getElementById('statAttendance').textContent = '--%';
+            document.getElementById('statSave').textContent = '--';
+            document.getElementById('statReview').textContent = '--';
+            document.getElementById('statPoints').textContent = '--';
+            return;
         }
         
-        // ==================== اختيار طالب ====================
-        function selectStudent(id) {
-            selectedStudent = students.find(s => s.id === id);
-            
-            document.getElementById('formTitle').textContent = selectedStudent.Student_na;
-            document.getElementById('formSubtitle').textContent = `المستوى: ${selectedStudent.Student_lev || 'مبتدئ'}`;
-            
-            document.getElementById('selectPrompt').classList.add('hidden');
-            document.getElementById('entryForm').classList.remove('hidden');
-            
-            resetForm();
-            renderStudents();
-        }
+        container.classList.remove('hidden');
+        noData.classList.add('hidden');
         
-        // ==================== اختيار الحضور ====================
-        function selectAttendance(btn) {
-            document.querySelectorAll('.atte-btn').forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
-            
-            formData.attendance = btn.dataset.value;
-            formData.attendancePoints = parseInt(btn.dataset.points);
-            
-            const gradesSection = document.getElementById('gradesSection');
-            if (formData.attendance === 'حاضر' || formData.attendance === 'متأخر') {
-                gradesSection.classList.remove('hidden');
-            } else {
-                gradesSection.classList.add('hidden');
-                // إعادة تعيين درجات الإتقان والمراجعة للغائب/المستأذن
-                formData.saveScore = null;
-                formData.savePoints = 0;
-                formData.reviewScore = null;
-                formData.reviewPoints = 0;
-                document.querySelectorAll('.grade-btn').forEach(b => b.classList.remove('selected'));
-            }
-            
-            calculateTotalPoints();
-            validateForm();
-        }
+        // حساب الإحصائيات الحقيقية
+        const totalRecords = studentRecords.length;
         
-        // ==================== اختيار الدرجة ====================
-        function selectGrade(btn, type) {
-            document.querySelectorAll(`.grade-btn[data-type="${type}"]`).forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
-            
-            const value = parseInt(btn.dataset.value);
-            
-            if (type === 'save') {
-                formData.saveScore = value;
-                // النقاط: 10، 8، 6 تضاف كما هي، 4 (إعادة) = 0
-                formData.savePoints = (value >= 6) ? value : 0;
-            } else {
-                formData.reviewScore = value;
-                formData.reviewPoints = (value >= 6) ? value : 0;
-            }
-            
-            calculateTotalPoints();
-            validateForm();
-        }
+        // حساب متوسط الإتقان
+        const totalSave = studentRecords.reduce((sum, r) => sum + (parseFloat(r.save_sc) || 0), 0);
+        const avgSave = (totalSave / totalRecords).toFixed(1);
         
-        // ==================== خصم النقاط ====================
-        function deductPoints(amount) {
-            formData.deductions += amount;
-            
-            const deductionsDisplay = document.getElementById('deductionsDisplay');
-            deductionsDisplay.classList.remove('hidden');
-            deductionsDisplay.querySelector('span').textContent = formData.deductions;
-            
-            calculateTotalPoints();
-        }
+        // حساب متوسط المراجعة
+        const totalReview = studentRecords.reduce((sum, r) => sum + (parseFloat(r.review_sc) || 0), 0);
+        const avgReview = (totalReview / totalRecords).toFixed(1);
         
-        // ==================== حساب مجموع النقاط ====================
-        function calculateTotalPoints() {
-            // المعادلة: الحضور + الإتقان + المراجعة - الخصومات
-            formData.totalPoints = formData.attendancePoints + formData.savePoints + formData.reviewPoints - formData.deductions;
-            
-            // تحديث العرض
-            document.getElementById('attendancePoints').textContent = `+${formData.attendancePoints}`;
-            document.getElementById('savePoints').textContent = `+${formData.savePoints}`;
-            document.getElementById('reviewPoints').textContent = `+${formData.reviewPoints}`;
-            
-            const pointsDisplay = document.getElementById('pointsDisplay');
-            pointsDisplay.textContent = formData.totalPoints;
-            
-            // تغيير اللون للسالب
-            if (formData.totalPoints < 0) {
-                pointsDisplay.classList.add('negative');
-            } else {
-                pointsDisplay.classList.remove('negative');
-            }
-            
-            document.getElementById('pointsInput').value = formData.totalPoints;
-        }
+        // حساب نسبة الحضور (حاضر + متأخر يعتبر حضور)
+        const presentCount = studentRecords.filter(r => r.atte === 'حاضر' || r.atte === 'متأخر').length;
+        const attendanceRate = Math.round((presentCount / totalRecords) * 100);
         
-        // ==================== التحقق من النموذج ====================
-        function validateForm() {
-            const saveBtn = document.getElementById('saveBtn');
-            let isValid = false;
-            
-            if (formData.attendance === 'غائب' || formData.attendance === 'مستأذن') {
-                isValid = true;
-            } else if (formData.attendance === 'حاضر' || formData.attendance === 'متأخر') {
-                const lesson = document.getElementById('lessonSelect').value;
-                isValid = lesson && formData.saveScore && formData.reviewScore;
-            }
-            
-            saveBtn.disabled = !isValid;
-        }
+        // مجموع النقاط
+        const totalPoints = studentRecords.reduce((sum, r) => sum + (parseInt(r.points) || 0), 0);
         
-        // ==================== إرسال البيانات ====================
-        async function handleSubmit(e) {
-            e.preventDefault();
-            
-            const saveBtn = document.getElementById('saveBtn');
-            saveBtn.disabled = true;
-            saveBtn.innerHTML = '<div class="loader mx-auto"></div>';
-            
-            const payload = {
-                student_na: selectedStudent.Student_na,
-                lesson_na: document.getElementById('lessonSelect').value || '',
-                save_sc: formData.saveScore || 0,
-                review_sc: formData.reviewScore || 0,
-                points: formData.totalPoints,
-                atte: formData.attendance,
-                notes: document.getElementById('notesInput').value,
-                date: document.getElementById('selectedDate').value,
-                current_lesson: document.getElementById('currentLessonInput').value
-            };
-            
-            try {
-                const response = await fetch(SUBMIT_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                
-                if (response.ok) {
-                    todayRecords.push(payload);
-                    
-                    showToast('تم حفظ البيانات بنجاح ✓', 'success');
-                    
-                    updateSummary();
-                    renderStudents();
-                    
-                    resetForm();
-                    selectedStudent = null;
-                    document.getElementById('selectPrompt').classList.remove('hidden');
-                    document.getElementById('entryForm').classList.add('hidden');
-                    document.getElementById('formTitle').textContent = 'اختر طالباً للبدء';
-                    document.getElementById('formSubtitle').textContent = 'اضغط على اسم الطالب من القائمة';
-                    
-                } else {
-                    showToast('فشل حفظ البيانات', 'error');
-                }
-            } catch (error) {
-                console.error('خطأ:', error);
-                showToast('خطأ في الاتصال', 'error');
-            }
-            
-            saveBtn.disabled = false;
-            saveBtn.innerHTML = '<i class="fas fa-save"></i><span>حفظ البيانات</span>';
-        }
+        // عرض الإحصائيات
+        document.getElementById('statAttendance').textContent = `${attendanceRate}%`;
+        document.getElementById('statSave').textContent = avgSave;
+        document.getElementById('statReview').textContent = avgReview;
+        document.getElementById('statPoints').textContent = totalPoints;
         
-        // ==================== إعادة تعيين النموذج ====================
-        function resetForm() {
-            formData = {
-                attendance: null,
-                attendancePoints: 0,
-                lesson: null,
-                saveScore: null,
-                savePoints: 0,
-                reviewScore: null,
-                reviewPoints: 0,
-                deductions: 0,
-                totalPoints: 0,
-                currentLesson: '',
-                notes: ''
-            };
-            
-            document.querySelectorAll('.atte-btn, .grade-btn').forEach(b => b.classList.remove('selected'));
-            document.getElementById('lessonSelect').value = '';
-            document.getElementById('pointsInput').value = '0';
-            document.getElementById('pointsDisplay').textContent = '0';
-            document.getElementById('pointsDisplay').classList.remove('negative');
-            document.getElementById('attendancePoints').textContent = '+0';
-            document.getElementById('savePoints').textContent = '+0';
-            document.getElementById('reviewPoints').textContent = '+0';
-            document.getElementById('deductionsDisplay').classList.add('hidden');
-            document.getElementById('deductionsDisplay').querySelector('span').textContent = '0';
-            document.getElementById('currentLessonInput').value = '';
-            document.getElementById('notesInput').value = '';
-            document.getElementById('gradesSection').classList.add('hidden');
-            document.getElementById('saveBtn').disabled = true;
-        }
+        // إعداد بيانات الرسوم البيانية
+        const labels = studentRecords.map(r => r.date || 'اليوم');
+        const saveData = studentRecords.map(r => r.save_sc || 0);
+        const reviewData = studentRecords.map(r => r.review_sc || 0);
         
-        // ==================== تحديث الملخص ====================
-        function updateSummary() {
-            const date = document.getElementById('selectedDate').value;
-            document.getElementById('summaryDate').textContent = `- ${date}`;
-            
-            const dateRecords = todayRecords.filter(r => r.date === date);
-            
-            document.getElementById('summaryTotal').textContent = students.length;
-            document.getElementById('summaryPresent').textContent = dateRecords.filter(r => r.atte === 'حاضر').length;
-            document.getElementById('summaryAbsent').textContent = dateRecords.filter(r => r.atte === 'غائب').length;
-            document.getElementById('summaryLate').textContent = dateRecords.filter(r => r.atte === 'متأخر').length;
-            document.getElementById('summaryExcused').textContent = dateRecords.filter(r => r.atte === 'مستأذن').length;
-            
-            const tbody = document.getElementById('summaryTableBody');
-            if (dateRecords.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="7" class="py-10 text-center text-gray-400">
-                            <i class="fas fa-inbox text-4xl mb-2 block"></i>
-                            لا توجد بيانات مسجلة اليوم
-                        </td>
-                    </tr>
-                `;
-            } else {
-                tbody.innerHTML = dateRecords.map(r => {
-                    let atteClass = '';
-                    if (r.atte === 'حاضر') atteClass = 'text-green-600 bg-green-100';
-                    else if (r.atte === 'غائب') atteClass = 'text-red-600 bg-red-100';
-                    else if (r.atte === 'متأخر') atteClass = 'text-yellow-600 bg-yellow-100';
-                    else atteClass = 'text-purple-600 bg-purple-100';
-                    
-                    return `
-                        <tr>
-                            <td class="py-3 px-4 font-medium">${r.student_na}</td>
-                            <td class="py-3 px-4 text-center"><span class="px-3 py-1 rounded-full text-sm ${atteClass}">${r.atte}</span></td>
-                            <td class="py-3 px-4 text-sm">${r.lesson_na || '-'}</td>
-                            <td class="py-3 px-4 text-center font-bold">${r.save_sc || '-'}</td>
-                            <td class="py-3 px-4 text-center font-bold">${r.review_sc || '-'}</td>
-                            <td class="py-3 px-4 text-center"><span class="text-primary-600 font-bold">${r.points}</span></td>
-                            <td class="py-3 px-4 text-sm text-gray-600">${r.current_lesson || '-'}</td>
-                        </tr>
-                    `;
-                }).join('');
-            }
-        }
+        const attendanceCounts = [
+            studentRecords.filter(r => r.atte === 'حاضر').length,
+            studentRecords.filter(r => r.atte === 'غائب').length,
+            studentRecords.filter(r => r.atte === 'متأخر').length,
+            studentRecords.filter(r => r.atte === 'مستأذن').length
+        ];
         
-        // ==================== التبويبات ====================
-        function switchTab(tab) {
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.dataset.tab === tab) btn.classList.add('active');
-            });
-            
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
-            document.getElementById(`${tab}Tab`).classList.remove('hidden');
-            
-            if (tab === 'summary') updateSummary();
-        }
+        const ctx1 = document.getElementById('progressChart').getContext('2d');
+        const ctx2 = document.getElementById('attendanceChart').getContext('2d');
         
-        // ==================== تقارير الطالب ====================
-        function loadStudentReport() {
-            const studentName = document.getElementById('reportStudentSelect').value;
-            const container = document.getElementById('reportChartContainer');
-            const noData = document.getElementById('noReportData');
-            
-            if (!studentName) {
-                container.classList.add('hidden');
-                noData.classList.remove('hidden');
+        Chart.getChart(ctx1)?.destroy();
+        Chart.getChart(ctx2)?.destroy();
+        
+        new Chart(ctx1, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: 'الإتقان', data: saveData, borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.1)', fill: true, tension: 0.4 },
+                    { label: 'المراجعة', data: reviewData, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)', fill: true, tension: 0.4 }
+                ]
+            },
+            options: { responsive: true, plugins: { legend: { position: 'bottom' } }, scales: { y: { min: 0, max: 10 } } }
+        });
+        
+        new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+                labels: ['حاضر', 'غائب', 'متأخر', 'مستأذن'],
+                datasets: [{ data: attendanceCounts, backgroundColor: ['#22c55e', '#ef4444', '#f59e0b', '#8b5cf6'] }]
+            },
+            options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+        });
+    }
+    
+    // ==================== التصدير ====================
+    // التعديل الثالث: تفعيل تصدير Excel و PDF
+    function exportReports(format) {
+        const studentName = document.getElementById('reportStudentSelect').value;
+        if (!studentName) {
+            showToast('الرجاء اختيار طالب أولاً', 'error');
+            return;
+        }
+
+        const reportElement = document.getElementById('reportContentToExport');
+        const date = document.getElementById('selectedDate').value;
+        const fileName = `تقرير_${studentName}_${date}`;
+
+        if (format === 'excel') {
+            const studentRecords = todayRecords.filter(r => r.student_na === studentName);
+            if (studentRecords.length === 0) {
+                showToast('لا توجد بيانات للتصدير', 'error');
                 return;
             }
             
-            container.classList.remove('hidden');
-            noData.classList.add('hidden');
-            
-            const ctx1 = document.getElementById('progressChart').getContext('2d');
-            const ctx2 = document.getElementById('attendanceChart').getContext('2d');
-            
-            Chart.getChart(ctx1)?.destroy();
-            Chart.getChart(ctx2)?.destroy();
-            
-            new Chart(ctx1, {
-                type: 'line',
-                data: {
-                    labels: ['الأسبوع 1', 'الأسبوع 2', 'الأسبوع 3', 'الأسبوع 4'],
-                    datasets: [
-                        { label: 'الإتقان', data: [7, 8, 8, 9], borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.1)', fill: true, tension: 0.4 },
-                        { label: 'المراجعة', data: [6, 7, 8, 8], borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)', fill: true, tension: 0.4 }
-                    ]
-                },
-                options: { responsive: true, plugins: { legend: { position: 'bottom' } }, scales: { y: { min: 0, max: 10 } } }
-            });
-            
-            new Chart(ctx2, {
-                type: 'doughnut',
-                data: {
-                    labels: ['حاضر', 'غائب', 'متأخر', 'مستأذن'],
-                    datasets: [{ data: [18, 1, 2, 1], backgroundColor: ['#22c55e', '#ef4444', '#f59e0b', '#8b5cf6'] }]
-                },
-                options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
-            });
-            
-            document.getElementById('statAttendance').textContent = '90%';
-            document.getElementById('statSave').textContent = '8.2';
-            document.getElementById('statReview').textContent = '7.8';
-            document.getElementById('statPoints').textContent = '45';
+            const ws = XLSX.utils.json_to_sheet(studentRecords);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "تقرير الطالب");
+            XLSX.writeFile(wb, `${fileName}.xlsx`);
+            showToast('تم تحميل ملف Excel', 'success');
+        } 
+        else if (format === 'pdf') {
+            const opt = {
+                margin: 1,
+                filename: `${fileName}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+            html2pdf().from(reportElement).set(opt).save();
+            showToast('جاري تحميل ملف PDF...', 'success');
         }
+    }
+    
+    function exportSummary(format) {
+        const date = document.getElementById('selectedDate').value;
+        const fileName = `ملخص_اليوم_${date}`;
         
-        // ==================== التصدير ====================
-        function exportReports(format) {
-            showToast(`جاري تصدير التقرير بصيغة ${format.toUpperCase()}...`, 'info');
-        }
-        
-        function exportSummary(format) {
-            showToast(`جاري تصدير الملخص بصيغة ${format.toUpperCase()}...`, 'info');
-        }
-        
-        // ==================== الإشعارات ====================
-        function showToast(message, type = 'success') {
-            const toast = document.getElementById('toast');
-            const icon = document.getElementById('toastIcon');
-            const msg = document.getElementById('toastMessage');
-            
-            msg.textContent = message;
-            
-            toast.className = 'toast fixed bottom-6 left-6 right-6 md:left-auto md:right-6 md:w-96 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 z-50';
-            
-            if (type === 'success') {
-                toast.classList.add('bg-primary-500');
-                icon.className = 'fas fa-check-circle text-2xl';
-            } else if (type === 'error') {
-                toast.classList.add('bg-red-500');
-                icon.className = 'fas fa-times-circle text-2xl';
-            } else {
-                toast.classList.add('bg-blue-500');
-                icon.className = 'fas fa-info-circle text-2xl';
+        if (format === 'excel') {
+            const recordsToExport = todayRecords.filter(r => r.date === date);
+            if (recordsToExport.length === 0) {
+                showToast('لا توجد بيانات للتصدير اليوم', 'error');
+                return;
             }
-            
-            toast.classList.add('show');
-            
-            setTimeout(() => toast.classList.remove('show'), 3000);
+
+            const ws = XLSX.utils.json_to_sheet(recordsToExport);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "ملخص اليوم");
+            XLSX.writeFile(wb, `${fileName}.xlsx`);
+            showToast('تم تحميل ملف Excel', 'success');
+        } 
+        else if (format === 'pdf') {
+            const element = document.getElementById('summaryTab');
+            const opt = {
+                margin: 0.5,
+                filename: `${fileName}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }
+            };
+            html2pdf().from(element).set(opt).save();
+            showToast('جاري تحميل ملف PDF...', 'success');
         }
-    </script>
+    }
+    
+    // ==================== الإشعارات ====================
+    function showToast(message, type = 'success') {
+        const toast = document.getElementById('toast');
+        const icon = document.getElementById('toastIcon');
+        const msg = document.getElementById('toastMessage');
+        
+        msg.textContent = message;
+        
+        toast.className = 'toast fixed bottom-6 left-6 right-6 md:left-auto md:right-6 md:w-96 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 z-50';
+        
+        if (type === 'success') {
+            toast.classList.add('bg-primary-500');
+            icon.className = 'fas fa-check-circle text-2xl';
+        } else if (type === 'error') {
+            toast.classList.add('bg-red-500');
+            icon.className = 'fas fa-times-circle text-2xl';
+        } else {
+            toast.classList.add('bg-blue-500');
+            icon.className = 'fas fa-info-circle text-2xl';
+        }
+        
+        toast.classList.add('show');
+        
+        setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+</script>
+
 </body>
 </html>
