@@ -565,7 +565,6 @@
                 }
             }
             
-            /* التعديل الثاني: عرض مستوى الطالب الحقيقي */
             return `
                 <div class="student-card glass-card rounded-xl p-4 cursor-pointer text-center relative ${statusClass} ${selectedStudent?.id === student.id ? 'selected' : ''}" 
                      onclick="selectStudent(${student.id})">
@@ -602,7 +601,6 @@
         selectedStudent = students.find(s => s.id === id);
         
         document.getElementById('formTitle').textContent = selectedStudent.Student_na;
-        /* التعديل الثاني: عرض مستوى الطالب الحقيقي في العنوان الفرعي */
         document.getElementById('formSubtitle').textContent = `المستوى: ${selectedStudent.Student_lev || 'غير محدد'}`;
         
         document.getElementById('selectPrompt').classList.add('hidden');
@@ -625,7 +623,6 @@
             gradesSection.classList.remove('hidden');
         } else {
             gradesSection.classList.add('hidden');
-            // إعادة تعيين درجات الإتقان والمراجعة للغائب/المستأذن
             formData.saveScore = null;
             formData.savePoints = 0;
             formData.reviewScore = null;
@@ -646,7 +643,6 @@
         
         if (type === 'save') {
             formData.saveScore = value;
-            // النقاط: 10، 8، 6 تضاف كما هي، 4 (إعادة) = 0
             formData.savePoints = (value >= 6) ? value : 0;
         } else {
             formData.reviewScore = value;
@@ -668,7 +664,6 @@
         calculateTotalPoints();
     }
     
-    // التعديل الأول: دالة إلغاء الخصم
     function resetDeductions() {
         formData.deductions = 0;
         
@@ -680,10 +675,8 @@
     
     // ==================== حساب مجموع النقاط ====================
     function calculateTotalPoints() {
-        // المعادلة: الحضور + الإتقان + المراجعة - الخصومات
         formData.totalPoints = formData.attendancePoints + formData.savePoints + formData.reviewPoints - formData.deductions;
         
-        // تحديث العرض
         document.getElementById('attendancePoints').textContent = `+${formData.attendancePoints}`;
         document.getElementById('savePoints').textContent = `+${formData.savePoints}`;
         document.getElementById('reviewPoints').textContent = `+${formData.reviewPoints}`;
@@ -691,7 +684,6 @@
         const pointsDisplay = document.getElementById('pointsDisplay');
         pointsDisplay.textContent = formData.totalPoints;
         
-        // تغيير اللون للسالب
         if (formData.totalPoints < 0) {
             pointsDisplay.classList.add('negative');
         } else {
@@ -862,7 +854,6 @@
     }
     
     // ==================== تقارير الطالب ====================
-    // التعديل الرابع: إصلاح التقارير الوهمية واستخدام البيانات الحقيقية من todayRecords
     function loadStudentReport() {
         const studentName = document.getElementById('reportStudentSelect').value;
         const container = document.getElementById('reportChartContainer');
@@ -874,7 +865,6 @@
             return;
         }
         
-        // فلترة السجلات للطالب المحدد
         const studentRecords = todayRecords.filter(r => r.student_na === studentName);
         
         if (studentRecords.length === 0) {
@@ -882,7 +872,6 @@
             noData.classList.remove('hidden');
             noData.querySelector('p').textContent = 'لا توجد بيانات لهذا الطالب';
             
-            // إعادة تعيين الإحصائيات
             document.getElementById('statAttendance').textContent = '--%';
             document.getElementById('statSave').textContent = '--';
             document.getElementById('statReview').textContent = '--';
@@ -893,31 +882,24 @@
         container.classList.remove('hidden');
         noData.classList.add('hidden');
         
-        // حساب الإحصائيات الحقيقية
         const totalRecords = studentRecords.length;
         
-        // حساب متوسط الإتقان
         const totalSave = studentRecords.reduce((sum, r) => sum + (parseFloat(r.save_sc) || 0), 0);
         const avgSave = (totalSave / totalRecords).toFixed(1);
         
-        // حساب متوسط المراجعة
         const totalReview = studentRecords.reduce((sum, r) => sum + (parseFloat(r.review_sc) || 0), 0);
         const avgReview = (totalReview / totalRecords).toFixed(1);
         
-        // حساب نسبة الحضور (حاضر + متأخر يعتبر حضور)
         const presentCount = studentRecords.filter(r => r.atte === 'حاضر' || r.atte === 'متأخر').length;
         const attendanceRate = Math.round((presentCount / totalRecords) * 100);
         
-        // مجموع النقاط
         const totalPoints = studentRecords.reduce((sum, r) => sum + (parseInt(r.points) || 0), 0);
         
-        // عرض الإحصائيات
         document.getElementById('statAttendance').textContent = `${attendanceRate}%`;
         document.getElementById('statSave').textContent = avgSave;
         document.getElementById('statReview').textContent = avgReview;
         document.getElementById('statPoints').textContent = totalPoints;
         
-        // إعداد بيانات الرسوم البيانية
         const labels = studentRecords.map(r => r.date || 'اليوم');
         const saveData = studentRecords.map(r => r.save_sc || 0);
         const reviewData = studentRecords.map(r => r.review_sc || 0);
@@ -958,7 +940,6 @@
     }
     
     // ==================== التصدير ====================
-    // التعديل الثالث: تفعيل تصدير Excel و PDF
     function exportReports(format) {
         const studentName = document.getElementById('reportStudentSelect').value;
         if (!studentName) {
@@ -1053,6 +1034,8 @@
         setTimeout(() => toast.classList.remove('show'), 3000);
     }
 </script>
+
+<!-- ==================== AI Chatbot Widget ==================== -->
 <div id="aiWidget" class="fixed bottom-6 left-6 z-50 flex flex-col items-start gap-4" style="right: auto; left: 20px;">
     
     <button onclick="toggleChat()" class="w-14 h-14 bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-full shadow-2xl flex items-center justify-center text-2xl hover:scale-110 transition duration-300 border-2 border-white">
@@ -1093,19 +1076,16 @@
 </div>
 
 <script>
-    // هام جداً: تأكد أن هذا الرابط يطابق الرابط في n8n
-    // بما أنك في وضع التجربة (Listening)، قد تحتاج لإضافة -test بعد webhook
-    // جرب هذا الرابط أولاً، إذا لم يعمل استبدله بالرابط الذي يظهر لك في n8n
-    const AI_WEBHOOK_URL = 'https://n8n.srv1238717.hstgr.cloud/webhook-test/ai-chat';
+    // رابط الـ webhook - احذف -test إذا كان الـ workflow مفعّل
+    const AI_WEBHOOK_URL = 'https://n8n.srv1238717.hstgr.cloud/webhook/ai-chat';
 
     function toggleChat() {
         const window = document.getElementById('chatWindow');
         window.classList.toggle('hidden');
         if (!window.classList.contains('hidden')) {
-            document.getElementById('aiWindow').classList.add('flex');
             document.getElementById('aiInput').focus();
-        } else {
-            document.getElementById('aiWindow').classList.remove('flex');
+            // scroll عند فتح النافذة
+            setTimeout(() => scrollToBottom(), 100);
         }
     }
 
@@ -1124,36 +1104,65 @@
         
         // مؤشر التحميل
         const loadingId = appendLoading();
-        scrollToBottom();
+        
+        // scroll بعد إضافة الرسالة
+        setTimeout(() => scrollToBottom(), 50);
 
         try {
-            // إرسال البيانات إلى n8n
+            console.log('إرسال طلب إلى:', AI_WEBHOOK_URL);
+            console.log('البيانات:', { query: userText });
+            
             const response = await fetch(AI_WEBHOOK_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    query: userText, // هذا هو المتغير الذي ينتظره n8n
+                    query: userText,
                     date: document.getElementById('selectedDate').value
                 })
             });
 
+            console.log('حالة الرد:', response.status);
             const data = await response.json();
+            console.log('البيانات المستلمة:', data);
             
-            // إزالة التحميل وعرض الرد
-            document.getElementById(loadingId).remove();
+            // إزالة التحميل
+            const loadingElement = document.getElementById(loadingId);
+            if (loadingElement) loadingElement.remove();
             
-            // الرد يأتي عادة في خاصية output أو text
-            const reply = data.output || data.text || typeof data === 'string' ? data : "تم استلام البيانات لكن الرد غير واضح.";
+            // استخراج الرد بطرق متعددة
+            let reply;
+            if (data.output) {
+                reply = data.output;
+            } else if (data.message) {
+                reply = data.message;
+            } else if (data.response) {
+                reply = data.response;
+            } else if (data.text) {
+                reply = data.text;
+            } else if (typeof data === 'string') {
+                reply = data;
+            } else {
+                console.warn('شكل الرد غير متوقع:', data);
+                reply = "عذراً، لم أتمكن من فهم الرد. جرب صياغة السؤال بطريقة أخرى.";
+            }
+            
             appendMessage(reply, 'bot');
+            
+            // scroll بعد إضافة رد البوت
+            setTimeout(() => scrollToBottom(), 50);
 
         } catch (error) {
-            console.error(error);
-            document.getElementById(loadingId).remove();
-            appendMessage("حدث خطأ في الاتصال بالخادم. تأكد أن n8n يعمل.", 'bot');
+            console.error('خطأ في الاتصال:', error);
+            const loadingElement = document.getElementById(loadingId);
+            if (loadingElement) loadingElement.remove();
+            
+            appendMessage("⚠️ عذراً، حدث خطأ في الاتصال. تأكد من:\n• تشغيل workflow Mad_AI\n• صحة رابط الـ webhook", 'bot');
+            
+            // scroll بعد رسالة الخطأ
+            setTimeout(() => scrollToBottom(), 50);
         }
 
         btn.disabled = false;
-        scrollToBottom();
     }
 
     function appendMessage(text, sender) {
@@ -1173,8 +1182,8 @@
                 <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 border border-indigo-200 shrink-0">
                     <i class="fas fa-robot text-sm"></i>
                 </div>
-                <div class="bg-white border border-gray-200 p-3 rounded-2xl rounded-tr-none text-sm text-gray-700 shadow-sm max-w-[85%] leading-relaxed">
-                    ${text.replace(/\n/g, '<br>')}
+                <div class="bg-white border border-gray-200 p-3 rounded-2xl rounded-tr-none text-sm text-gray-700 shadow-sm max-w-[85%] leading-relaxed whitespace-pre-wrap">
+                    ${text}
                 </div>
             `;
         }
@@ -1205,7 +1214,16 @@
 
     function scrollToBottom() {
         const messages = document.getElementById('chatMessages');
-        messages.scrollTop = messages.scrollHeight;
+        if (messages) {
+            // استخدام طريقتين للتأكد من الـ scroll
+            messages.scrollTop = messages.scrollHeight;
+            
+            // smooth scroll للتأثير البصري الأفضل
+            messages.scrollTo({
+                top: messages.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
     }
 </script>
 
