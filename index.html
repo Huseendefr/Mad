@@ -1088,7 +1088,8 @@
             
             return `
                 <tr>
-                    <td class="py-3 px-4 font-medium">${r.date}</td>
+                
+                    <td class="py-3 px-4 font-medium">${r.date ? r.date.split('T')[0] : r.date}</td>
                     <td class="py-3 px-4 text-center"><span class="px-3 py-1 rounded-full text-sm ${atteClass}">${r.atte}</span></td>
                     <td class="py-3 px-4 text-sm">${r.lesson_na || '-'}</td>
                     <td class="py-3 px-4 text-center font-bold">${r.save_sc || '-'}</td>
