@@ -1040,7 +1040,7 @@
         document.getElementById('statReview').textContent = avgReview;
         document.getElementById('statPoints').textContent = totalPoints;
         
-        const labels = studentRecords.map(r => r.date);
+        const labels = studentRecords.map(r => r.date ? r.date.split('T')[0] : r.date);
         const saveData = studentRecords.map(r => r.save_sc || 0);
         const reviewData = studentRecords.map(r => r.review_sc || 0);
         
