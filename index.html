@@ -587,22 +587,37 @@
             const response = await fetch(GET_DATA_URL);
             const data = await response.json();
             
-            // ✅ فلترة البيانات الثلاثة من نفس الـ endpoint
-            students = data.filter(item => item.Student_na && !item.date);
+            // 🔍 تشخيص: عرض البيانات في Console
+            console.log('📦 إجمالي البيانات:', data.length);
+            console.log('📋 عينة من البيانات:', data.slice(0, 5));
+            
+            // ✅ فلترة الطلاب (لديهم Student_na وليس لديهم تاريخ)
+            students = data.filter(item => item.Student_na && !item.date && !item.Date);
+            
+            // ✅ فلترة الدروس
             lessons = data.filter(item => item.lesson_name);
-            allRecords = data.filter(item => item.date && item.atte).map(r => ({
-                student_na: r.student_na || '',
-                lesson_na: r.lesson_na || '',
-                save_sc: r.save_sc || 0,
-                review_sc: r.review_sc || 0,
-                points: r.points || 0,
-                atte: r.atte || '',
-                notes: r.notes || '',
-                date: r.date || '',
-                current_lesson: r.current_lesson || ''
+            
+            // ✅ فلترة السجلات اليومية - البحث بأسماء مختلفة للحقول
+            allRecords = data.filter(item => {
+                // البحث عن حقل التاريخ بأي اسم
+                const hasDate = item.date || item.Date || item.DATE;
+                // البحث عن حقل الحضور بأي اسم
+                const hasAtte = item.atte || item.Atte || item.ATTE || item.attendance || item.Attendance;
+                return hasDate && hasAtte;
+            }).map(r => ({
+                student_na: r.student_na || r.Student_na || r.studentName || '',
+                lesson_na: r.lesson_na || r.Lesson_na || r.lessonName || '',
+                save_sc: r.save_sc || r.Save_sc || r.saveScore || 0,
+                review_sc: r.review_sc || r.Review_sc || r.reviewScore || 0,
+                points: r.points || r.Points || 0,
+                atte: r.atte || r.Atte || r.ATTE || r.attendance || r.Attendance || '',
+                notes: r.notes || r.Notes || '',
+                date: r.date || r.Date || r.DATE || '',
+                current_lesson: r.current_lesson || r.Current_lesson || r.currentLesson || ''
             }));
             
             console.log('✅ تم تحميل:', students.length, 'طالب |', lessons.length, 'درس |', allRecords.length, 'سجل');
+            console.log('📊 عينة من السجلات:', allRecords.slice(0, 3));
             
             document.getElementById('studentsCount').textContent = `(${students.length} طالب)`;
             document.getElementById('recordsCount').textContent = `${allRecords.length} سجل`;
