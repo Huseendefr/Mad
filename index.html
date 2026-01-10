@@ -905,11 +905,18 @@
     }
     
     // ==================== تحديث الملخص ====================
+    // ==================== تحديث الملخص (تم إصلاح مقارنة التاريخ) ====================
     function updateSummary() {
-        const date = document.getElementById('selectedDate').value;
-        document.getElementById('summaryDate').textContent = `- ${date}`;
+        const dateInput = document.getElementById('selectedDate').value; // التاريخ من الخانة (قصير)
+        document.getElementById('summaryDate').textContent = `- ${dateInput}`;
         
-        const dateRecords = allRecords.filter(r => r.date === date);
+        // هنا التعديل: نقص التاريخ الطويل القادم من السيرفر قبل المقارنة
+        const dateRecords = allRecords.filter(r => {
+            if (!r.date) return false;
+            // نأخذ الجزء الأول من التاريخ فقط (YYYY-MM-DD)
+            const recordDateShort = r.date.split('T')[0];
+            return recordDateShort === dateInput;
+        });
         
         document.getElementById('summaryTotal').textContent = students.length;
         document.getElementById('summaryPresent').textContent = dateRecords.filter(r => r.atte === 'حاضر').length;
