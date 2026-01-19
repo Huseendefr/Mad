@@ -436,6 +436,7 @@
                                             <th class="py-3 px-4 text-center">المراجعة</th>
                                             <th class="py-3 px-4 text-center">النقاط</th>
                                             <th class="py-3 px-4 text-right">وصل إلى</th>
+                                            <th class="py-3 px-4 text-center">إجراء</th>
                                         </tr>
                                     </thead>
                                     <tbody id="reportTableBody"></tbody>
@@ -506,6 +507,7 @@
                                 <th class="py-3 px-4 text-center">المراجعة</th>
                                 <th class="py-3 px-4 text-center">النقاط</th>
                                 <th class="py-3 px-4 text-right">وصل إلى</th>
+                                <th class="py-3 px-4 text-center">إجراء</th>
                             </tr>
                         </thead>
                         <tbody id="summaryTableBody">
@@ -951,6 +953,13 @@
                         <td class="py-3 px-4 text-center font-bold">${r.review_sc || '-'}</td>
                         <td class="py-3 px-4 text-center"><span class="text-primary-600 font-bold">${r.points}</span></td>
                         <td class="py-3 px-4 text-sm text-gray-600">${r.current_lesson || '-'}</td>
+                        <td class="py-3 px-4 text-center">
+                        <button onclick="deleteRecord('${r.student_na}', '${r.date}')" 
+                        class="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition"
+                           title="حذف التقييم">
+                        <i class="fas fa-trash-alt"></i>
+                        </button>
+                        </td>
                     </tr>
                 `;
             }).join('');
@@ -1103,6 +1112,13 @@
                     <td class="py-3 px-4 text-center font-bold">${r.review_sc || '-'}</td>
                     <td class="py-3 px-4 text-center"><span class="text-primary-600 font-bold">${r.points}</span></td>
                     <td class="py-3 px-4 text-sm text-gray-600">${r.current_lesson || '-'}</td>
+                    <td class="py-3 px-4 text-center">
+                    <button onclick="deleteRecord('${r.student_na}', '${r.date}')" 
+                    class="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition"
+                    title="حذف التقييم">
+                    <i class="fas fa-trash-alt"></i>
+                    </button>
+                    </td>
                 </tr>
             `;
         }).join('');
