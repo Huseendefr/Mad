@@ -512,7 +512,7 @@
                         </thead>
                         <tbody id="summaryTableBody">
                             <tr>
-                                <td colspan="7" class="py-10 text-center text-gray-400">
+                                <td colspan="8" class="py-10 text-center text-gray-400">
                                     <i class="fas fa-inbox text-4xl mb-2 block"></i>
                                     لا توجد بيانات مسجلة اليوم
                                 </td>
@@ -589,21 +589,15 @@
             const response = await fetch(GET_DATA_URL);
             const data = await response.json();
             
-            // 🔍 تشخيص: عرض البيانات في Console
             console.log('📦 إجمالي البيانات:', data.length);
             console.log('📋 عينة من البيانات:', data.slice(0, 5));
             
-            // ✅ فلترة الطلاب (لديهم Student_na وليس لديهم تاريخ)
             students = data.filter(item => item.Student_na && !item.date && !item.Date);
             
-            // ✅ فلترة الدروس
             lessons = data.filter(item => item.lesson_name);
             
-            // ✅ فلترة السجلات اليومية - البحث بأسماء مختلفة للحقول
             allRecords = data.filter(item => {
-                // البحث عن حقل التاريخ بأي اسم
                 const hasDate = item.date || item.Date || item.DATE;
-                // البحث عن حقل الحضور بأي اسم
                 const hasAtte = item.atte || item.Atte || item.ATTE || item.attendance || item.Attendance;
                 return hasDate && hasAtte;
             }).map(r => ({
@@ -907,15 +901,12 @@
     }
     
     // ==================== تحديث الملخص ====================
-    // ==================== تحديث الملخص (تم إصلاح مقارنة التاريخ) ====================
     function updateSummary() {
-        const dateInput = document.getElementById('selectedDate').value; // التاريخ من الخانة (قصير)
+        const dateInput = document.getElementById('selectedDate').value;
         document.getElementById('summaryDate').textContent = `- ${dateInput}`;
         
-        // هنا التعديل: نقص التاريخ الطويل القادم من السيرفر قبل المقارنة
         const dateRecords = allRecords.filter(r => {
             if (!r.date) return false;
-            // نأخذ الجزء الأول من التاريخ فقط (YYYY-MM-DD)
             const recordDateShort = r.date.split('T')[0];
             return recordDateShort === dateInput;
         });
@@ -930,7 +921,7 @@
         if (dateRecords.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="py-10 text-center text-gray-400">
+                    <td colspan="8" class="py-10 text-center text-gray-400">
                         <i class="fas fa-inbox text-4xl mb-2 block"></i>
                         لا توجد بيانات مسجلة لهذا اليوم
                     </td>
@@ -954,11 +945,11 @@
                         <td class="py-3 px-4 text-center"><span class="text-primary-600 font-bold">${r.points}</span></td>
                         <td class="py-3 px-4 text-sm text-gray-600">${r.current_lesson || '-'}</td>
                         <td class="py-3 px-4 text-center">
-                        <button onclick="deleteRecord('${r.student_na}', '${r.date}')" 
-                        class="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition"
-                           title="حذف التقييم">
-                        <i class="fas fa-trash-alt"></i>
-                        </button>
+                            <button onclick="deleteRecord('${r.student_na}', '${r.date}')" 
+                                class="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition"
+                                title="حذف التقييم">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
                         </td>
                     </tr>
                 `;
@@ -1104,7 +1095,6 @@
             
             return `
                 <tr>
-                
                     <td class="py-3 px-4 font-medium">${r.date ? r.date.split('T')[0] : r.date}</td>
                     <td class="py-3 px-4 text-center"><span class="px-3 py-1 rounded-full text-sm ${atteClass}">${r.atte}</span></td>
                     <td class="py-3 px-4 text-sm">${r.lesson_na || '-'}</td>
@@ -1113,11 +1103,11 @@
                     <td class="py-3 px-4 text-center"><span class="text-primary-600 font-bold">${r.points}</span></td>
                     <td class="py-3 px-4 text-sm text-gray-600">${r.current_lesson || '-'}</td>
                     <td class="py-3 px-4 text-center">
-                    <button onclick="deleteRecord('${r.student_na}', '${r.date}')" 
-                    class="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition"
-                    title="حذف التقييم">
-                    <i class="fas fa-trash-alt"></i>
-                    </button>
+                        <button onclick="deleteRecord('${r.student_na}', '${r.date}')" 
+                            class="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition"
+                            title="حذف التقييم">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
                     </td>
                 </tr>
             `;
@@ -1217,6 +1207,46 @@
         
         toast.classList.add('show');
         setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+    
+    // ==================== حذف التقييم ====================
+    async function deleteRecord(studentName, recordDate) {
+        if (!confirm(`هل أنت متأكد من حذف تقييم "${studentName}" بتاريخ ${recordDate.split('T')[0]}؟`)) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`${API_BASE}/Delete-record`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    student_na: studentName,
+                    date: recordDate
+                })
+            });
+            
+            if (response.ok) {
+                const index = allRecords.findIndex(r => 
+                    r.student_na === studentName && r.date === recordDate
+                );
+                
+                if (index > -1) {
+                    allRecords.splice(index, 1);
+                    document.getElementById('recordsCount').textContent = `${allRecords.length} سجل`;
+                }
+                
+                renderStudents();
+                updateSummary();
+                loadStudentReport();
+                
+                showToast('تم حذف التقييم بنجاح', 'success');
+            } else {
+                showToast('فشل حذف التقييم', 'error');
+            }
+        } catch (error) {
+            console.error('خطأ في الحذف:', error);
+            showToast('خطأ في الاتصال', 'error');
+        }
     }
 </script>
 
